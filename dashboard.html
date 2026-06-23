@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coleg.IO Yucatán</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #f9f7f4;
+  --surface:   #ffffff;
+  --surface-2: #f4f1ec;
+  --border:    #e8e3db;
+  --border-2:  #d6cfc4;
+
+  --ink-1: #1a1814;
+  --ink-2: #5a5650;
+  --ink-3: #9c9690;
+  --ink-4: #c4bfb8;
+
+  --sage:    #c8d5c0;
+  --sage-bg: #eef2eb;
+  --rose:    #e8c4c0;
+  --rose-bg: #faeee d;
+  --sky:     #b8cfe0;
+  --sky-bg:  #eaf2f8;
+  --sand:    #e0d4b8;
+  --sand-bg: #f7f2e8;
+  --lavender:#d0c8e8;
+  --lav-bg:  #f2eff8;
+
+  --sidebar-w: 220px;
+  --topbar-h:  56px;
+  --r: 10px;
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink-1);
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-rows: var(--topbar-h) 1fr;
+  height: 100vh;
+}
+
+/* ══ TOPBAR ══ */
+.topbar {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 32px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 17px; font-weight: 500;
+  color: var(--ink-1); letter-spacing: -.2px;
+  flex-shrink: 0;
+}
+.logo em { font-style: normal; color: var(--ink-3); font-weight: 400; }
+.logo-sep { width: 1px; height: 16px; background: var(--border-2); }
+.logo-region {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px; font-weight: 400;
+  color: var(--ink-3); letter-spacing: .3px;
+}
+
+.search {
+  flex: 1; max-width: 320px; margin-left: 8px;
+  display: flex; align-items: center; gap: 8px;
+  height: 32px; padding: 0 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: border-color .2s;
+}
+.search:focus-within { border-color: var(--border-2); background: #fff; }
+.search input { background: none; border: none; outline: none; color: var(--ink-1); font: inherit; flex: 1; }
+.search input::placeholder { color: var(--ink-4); }
+.search svg { color: var(--ink-4); flex-shrink: 0; }
+.search kbd { font-size: 10px; color: var(--ink-4); background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+
+.topbar-r { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.t-btn {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: none; border: 1px solid transparent;
+  color: var(--ink-3); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.t-btn:hover { background: var(--surface-2); border-color: var(--border); color: var(--ink-2); }
+.notif-wrap { position: relative; }
+.notif-pip {
+  position: absolute; top: 7px; right: 7px;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--rose); border: 1.5px solid var(--surface);
+}
+.topbar-sep { width: 1px; height: 18px; background: var(--border); }
+.avatar-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 3px 10px 3px 4px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 8px; cursor: pointer;
+  transition: border-color .15s;
+}
+.avatar-btn:hover { border-color: var(--border-2); }
+.avatar-circle {
+  width: 24px; height: 24px; border-radius: 6px;
+  background: var(--lavender);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 600; color: #5a4e8a;
+  border: 1px solid rgba(0,0,0,.06);
+}
+.avatar-name { font-size: 12px; font-weight: 500; color: var(--ink-2); }
+
+/* ══ SIDEBAR ══ */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 24px 12px 20px;
+  overflow-y: auto;
+}
+.sidebar::-webkit-scrollbar { width: 0; }
+
+.nav-group { margin-bottom: 24px; }
+.nav-group-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 1px;
+  color: var(--ink-4); text-transform: uppercase;
+  padding: 0 10px; margin-bottom: 4px;
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 10px; border-radius: 8px;
+  cursor: pointer; color: var(--ink-3);
+  transition: background .15s, color .15s;
+  position: relative; user-select: none;
+}
+.nav-item:hover { background: var(--surface-2); color: var(--ink-2); }
+.nav-item.active { background: var(--surface-2); color: var(--ink-1); }
+.nav-item.active .nav-dot { opacity: 1; }
+
+.nav-dot {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 2px; height: 16px; border-radius: 2px;
+  background: var(--ink-1); opacity: 0;
+  transition: opacity .15s;
+}
+
+.nav-ico {
+  width: 28px; height: 28px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.nav-label { font-size: 13px; font-weight: 500; flex: 1; }
+
+.nav-badge {
+  font-size: 10px; font-weight: 600; padding: 1px 6px;
+  border-radius: 20px; border: 1px solid;
+}
+
+.sidebar-sep { height: 1px; background: var(--border); margin: 8px 4px 16px; }
+
+.sidebar-footer { margin-top: auto; }
+.user-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px; border-radius: 8px; cursor: pointer;
+  transition: background .15s;
+}
+.user-row:hover { background: var(--surface-2); }
+.user-av {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: var(--lavender);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 600; color: #5a4e8a;
+  border: 1px solid rgba(0,0,0,.06); flex-shrink: 0;
+}
+.user-name { font-size: 12.5px; font-weight: 500; color: var(--ink-1); }
+.user-role { font-size: 11px; color: var(--ink-4); }
+
+/* ══ MAIN ══ */
+.main {
+  overflow-y: auto; overflow-x: hidden;
+  padding: 36px 40px;
+  display: flex; flex-direction: column; gap: 28px;
+  background: var(--bg);
+}
+.main::-webkit-scrollbar { width: 3px; }
+.main::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+
+/* Page header */
+.page-hd { display: flex; align-items: flex-end; justify-content: space-between; }
+.page-hd h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 26px; font-weight: 400;
+  color: var(--ink-1); letter-spacing: -.3px; line-height: 1;
+}
+.page-hd p { font-size: 12.5px; color: var(--ink-3); margin-top: 5px; font-weight: 300; }
+.hd-actions { display: flex; gap: 8px; }
+.btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 16px; border-radius: 8px;
+  font: inherit; font-size: 12.5px; font-weight: 500;
+  cursor: pointer; transition: all .15s var(--ease);
+  border: 1px solid;
+}
+.btn-ghost {
+  background: var(--surface); border-color: var(--border);
+  color: var(--ink-2);
+}
+.btn-ghost:hover { border-color: var(--border-2); color: var(--ink-1); }
+.btn-solid {
+  background: var(--ink-1); border-color: var(--ink-1);
+  color: #fff;
+}
+.btn-solid:hover { background: #2d2b27; }
+
+/* KPIs */
+.kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+.kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 20px 22px;
+  position: relative; overflow: hidden;
+  transition: border-color .2s, transform .2s;
+}
+.kpi:hover { border-color: var(--border-2); transform: translateY(-1px); }
+.kpi-accent {
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  border-radius: var(--r) var(--r) 0 0;
+}
+.kpi-label { font-size: 11px; font-weight: 500; color: var(--ink-3); letter-spacing: .1px; }
+.kpi-val {
+  font-family: 'Playfair Display', serif;
+  font-size: 34px; font-weight: 400;
+  color: var(--ink-1); line-height: 1; margin-top: 10px;
+}
+.kpi-trend { font-size: 11px; color: var(--ink-3); margin-top: 6px; }
+.kpi-trend b { color: var(--ink-2); }
+
+/* Modules */
+.modules-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; }
+.mod {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 22px 24px;
+  display: flex; flex-direction: column; gap: 16px;
+  transition: border-color .2s, box-shadow .2s, transform .2s;
+  cursor: pointer; position: relative; overflow: hidden;
+  min-height: 210px;
+}
+.mod:hover {
+  border-color: var(--border-2);
+  box-shadow: 0 4px 24px rgba(0,0,0,.05);
+  transform: translateY(-1px);
+}
+.mod.drag-over { outline: 2px solid var(--ink-2); outline-offset: -2px; }
+
+.mod-hd { display: flex; align-items: flex-start; gap: 13px; }
+.mod-ico {
+  width: 38px; height: 38px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; border: 1px solid;
+}
+.mod-title { font-size: 14px; font-weight: 600; color: var(--ink-1); letter-spacing: -.1px; }
+.mod-sub   { font-size: 11.5px; color: var(--ink-3); margin-top: 2px; font-weight: 300; }
+
+.mod-list  { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.row-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-radius: 7px;
+  background: var(--bg); border: 1px solid var(--border);
+  transition: border-color .15s, background .15s;
+  cursor: grab;
+}
+.row-item:hover { border-color: var(--border-2); background: var(--surface-2); }
+.row-item:active { cursor: grabbing; }
+.row-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.row-text { font-size: 12.5px; color: var(--ink-2); flex: 1; }
+.tag {
+  font-size: 10px; font-weight: 600; padding: 2px 8px;
+  border-radius: 20px; border: 1px solid; white-space: nowrap;
+}
+
+/* tag colors — pastel */
+.tag-ok   { color: #3d7a5a; background: var(--sage-bg);  border-color: var(--sage); }
+.tag-pend { color: #8a6a20; background: var(--sand-bg);  border-color: var(--sand); }
+.tag-err  { color: #9a3a3a; background: #faeeed;         border-color: var(--rose); }
+.tag-blue { color: #2a5a8a; background: var(--sky-bg);   border-color: var(--sky);  }
+.tag-lav  { color: #5a4e8a; background: var(--lav-bg);   border-color: var(--lavender); }
+
+.mod-ft {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 4px; border-top: 1px solid var(--border);
+}
+.mod-count { font-size: 11px; color: var(--ink-4); }
+.mod-cta {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 12px; font-weight: 500; color: var(--ink-2);
+  background: none; border: none; cursor: pointer;
+  transition: color .15s, gap .15s;
+}
+.mod-cta:hover { color: var(--ink-1); gap: 7px; }
+
+/* Bottom */
+.bottom { display: grid; grid-template-columns: 1fr 280px; gap: 14px; }
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 22px 24px;
+}
+.panel-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.panel-title { font-size: 13.5px; font-weight: 600; color: var(--ink-1); }
+.panel-link  { font-size: 12px; color: var(--ink-3); cursor: pointer; transition: color .15s; }
+.panel-link:hover { color: var(--ink-1); }
+
+.act-list { display: flex; flex-direction: column; }
+.act-row {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 8px; border-radius: 7px;
+  transition: background .15s;
+}
+.act-row:hover { background: var(--surface-2); }
+.act-ico {
+  width: 30px; height: 30px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; border: 1px solid;
+}
+.act-title2 { font-size: 12.5px; color: var(--ink-1); font-weight: 500; }
+.act-meta   { font-size: 11px; color: var(--ink-4); margin-top: 1px; }
+.act-time   { font-size: 11px; color: var(--ink-4); white-space: nowrap; margin-left: auto; }
+
+.quick-list { display: flex; flex-direction: column; gap: 5px; }
+.quick-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 7px;
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--ink-2); cursor: pointer; font: inherit;
+  font-size: 12.5px; font-weight: 400;
+  transition: background .15s, border-color .15s, color .15s;
+  text-align: left;
+}
+.quick-btn:hover { background: var(--surface-2); border-color: var(--border-2); color: var(--ink-1); }
+.q-ico {
+  width: 24px; height: 24px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid; flex-shrink: 0;
+}
+
+/* Ghost */
+.ghost {
+  position: fixed; pointer-events: none;
+  background: var(--surface); border: 1px solid var(--border-2);
+  border-radius: 7px; padding: 6px 14px;
+  font-size: 12px; color: var(--ink-2);
+  z-index: 9999; opacity: 0; transition: opacity .1s;
+  box-shadow: 0 4px 20px rgba(0,0,0,.1);
+}
+</style>
+</head>
+<body>
+
+<div class="ghost" id="ghost"></div>
+
+<div class="app">
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="logo">Coleg<em>.IO</em></div>
+  <div class="logo-sep"></div>
+  <span class="logo-region">Yucatán</span>
+
+  <div class="search">
+    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input placeholder="Buscar…">
+    <kbd>⌘K</kbd>
+  </div>
+
+  <div class="topbar-r">
+    <div class="notif-wrap">
+      <button class="t-btn">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </button>
+      <span class="notif-pip"></span>
+    </div>
+    <button class="t-btn">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+    <div class="topbar-sep"></div>
+    <div class="avatar-btn">
+      <div class="avatar-circle">AR</div>
+      <span class="avatar-name">Admin</span>
+    </div>
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+
+  <div class="nav-group">
+    <div class="nav-item active" onclick="setActive(this)">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:#f4f1ec;border-color:var(--border)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="var(--ink-2)" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <span class="nav-label">Inicio</span>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Módulos</div>
+
+    <div class="nav-item" onclick="setActive(this)">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--sky-bg);border-color:var(--sky)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#3a7ab0" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      </div>
+      <span class="nav-label">Finanzas</span>
+    </div>
+
+    <div class="nav-item" onclick="setActive(this)">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--sage-bg);border-color:var(--sage)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#3d7a5a" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <span class="nav-label">RH — Contratos</span>
+    </div>
+
+    <div class="nav-item" onclick="setActive(this)">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--sand-bg);border-color:var(--sand)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#8a6a20" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <span class="nav-label">CRM</span>
+      <span class="nav-badge" style="color:#3d7a5a;background:var(--sage-bg);border-color:var(--sage)">12</span>
+    </div>
+
+    <div class="nav-item" onclick="setActive(this)">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:#faeeed;border-color:var(--rose)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#9a3a3a" stroke-width="1.8"><path d="M15 5v2M15 11v2M15 17v2M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4V7a2 2 0 0 1 2-2z"/></svg>
+      </div>
+      <span class="nav-label">Tickets</span>
+      <span class="nav-badge" style="color:#9a3a3a;background:#faeeed;border-color:var(--rose)">5</span>
+    </div>
+
+    <div class="nav-item" onclick="setActive(this)">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--lav-bg);border-color:var(--lavender)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#5a4e8a" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <span class="nav-label">ERP</span>
+    </div>
+  </div>
+
+  <div class="sidebar-sep"></div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Sistema</div>
+    <div class="nav-item" onclick="setActive(this)">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--surface-2);border-color:var(--border)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="var(--ink-3)" stroke-width="1.8"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="21"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>
+      </div>
+      <span class="nav-label">Integraciones</span>
+    </div>
+    <div class="nav-item" onclick="setActive(this)">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--surface-2);border-color:var(--border)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="var(--ink-3)" stroke-width="1.8"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      </div>
+      <span class="nav-label">Supabase</span>
+    </div>
+    <div class="nav-item" onclick="setActive(this)">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--surface-2);border-color:var(--border)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="var(--ink-3)" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </div>
+      <span class="nav-label">Configuración</span>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-sep"></div>
+    <div class="user-row">
+      <div class="user-av">AR</div>
+      <div>
+        <div class="user-name">Administrador</div>
+        <div class="user-role">Super admin</div>
+      </div>
+    </div>
+  </div>
+
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <div class="page-hd">
+    <div>
+      <h1>Panel principal</h1>
+      <p>Lunes, 23 de junio de 2025</p>
+    </div>
+    <div class="hd-actions">
+      <button class="btn btn-ghost">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4"/></svg>
+        Sincronizar
+      </button>
+      <button class="btn btn-solid">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nuevo
+      </button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-accent" style="background:var(--sky)"></div>
+      <div class="kpi-label">Conciliaciones pendientes</div>
+      <div class="kpi-val">14</div>
+      <div class="kpi-trend"><b>3 nuevas</b> hoy</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-accent" style="background:var(--sage)"></div>
+      <div class="kpi-label">Contratos activos</div>
+      <div class="kpi-val">47</div>
+      <div class="kpi-trend"><b>2 firmados</b> esta semana</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-accent" style="background:var(--sand)"></div>
+      <div class="kpi-label">Leads CRM</div>
+      <div class="kpi-val">12</div>
+      <div class="kpi-trend"><b>+4</b> este mes</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-accent" style="background:var(--rose)"></div>
+      <div class="kpi-label">Tickets abiertos</div>
+      <div class="kpi-val">5</div>
+      <div class="kpi-trend"><b>2 sin atender</b> +24h</div>
+    </div>
+  </div>
+
+  <!-- Módulos -->
+  <div class="modules-grid">
+
+    <!-- Finanzas -->
+    <div class="mod" draggable="true">
+      <div class="mod-hd">
+        <div class="mod-ico" style="background:var(--sky-bg);border-color:var(--sky)">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#3a7ab0" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        </div>
+        <div>
+          <div class="mod-title">Conciliación de Tarjetas</div>
+          <div class="mod-sub">Flujo n8n activo · Sync hace 18 min</div>
+        </div>
+      </div>
+      <div class="mod-list">
+        <div class="row-item" draggable="true">
+          <div class="row-dot" style="background:var(--rose)"></div>
+          <span class="row-text">AMEX •••• 4821 — junio</span>
+          <span class="tag tag-pend">Pendiente</span>
+        </div>
+        <div class="row-item" draggable="true">
+          <div class="row-dot" style="background:var(--sage)"></div>
+          <span class="row-text">BBVA •••• 3309 — junio</span>
+          <span class="tag tag-ok">Conciliado</span>
+        </div>
+        <div class="row-item" draggable="true">
+          <div class="row-dot" style="background:var(--sand)"></div>
+          <span class="row-text">Banamex •••• 1104 — junio</span>
+          <span class="tag tag-pend">En revisión</span>
+        </div>
+      </div>
+      <div class="mod-ft">
+        <span class="mod-count">14 movimientos sin revisar</span>
+        <button class="mod-cta">Abrir módulo <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+      </div>
+    </div>
+
+    <!-- RH -->
+    <div class="mod" draggable="true">
+      <div class="mod-hd">
+        <div class="mod-ico" style="background:var(--sage-bg);border-color:var(--sage)">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#3d7a5a" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
+        <div>
+          <div class="mod-title">RH — Contratos</div>
+          <div class="mod-sub">Plantillas configurables · Campos dinámicos</div>
+        </div>
+      </div>
+      <div class="mod-list">
+        <div class="row-item" draggable="true">
+          <div class="row-dot" style="background:var(--sage)"></div>
+          <span class="row-text">Contrato — María García · Analista</span>
+          <span class="tag tag-ok">Firmado</span>
+        </div>
+        <div class="row-item" draggable="true">
+          <div class="row-dot" style="background:var(--sand)"></div>
+          <span class="row-text">Contrato — Luis Torres · Desarrollador</span>
+          <span class="tag tag-pend">Borrador</span>
+        </div>
+        <div class="row-item" draggable="true">
+          <div class="row-dot" style="background:var(--rose)"></div>
+          <span class="row-text">Contrato — Ana Ruiz · Directora</span>
+          <span class="tag tag-err">Vencido</span>
+        </div>
+      </div>
+      <div class="mod-ft">
+        <span class="mod-count">47 contratos activos</span>
+        <button class="mod-cta">Abrir módulo <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+      </div>
+    </div>
+
+    <!-- CRM -->
+    <div class="mod" draggable="true">
+      <div class="mod-hd">
+        <div class="mod-ico" style="background:var(--sand-bg);border-color:var(--sand)">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#8a6a20" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div>
+          <div class="mod-title">CRM</div>
+          <div class="mod-sub">Pipeline de ventas · Seguimiento de clientes</div>
+        </div>
+      </div>
+      <div class="mod-list">
+        <div class="row-item" draggable="true">
+          <div class="row-dot" style="background:var(--sand)"></div>
+          <span class="row-text">Propuesta — Empresa ABC</span>
+          <span class="tag tag-pend">Negociación</span>
+        </div>
+        <div class="row-item" draggable="true">
+          <div class="row-dot" style="background:var(--sage)"></div>
+          <span class="row-text">Demo — TechMex S.A.</span>
+          <span class="tag tag-ok">Agendada</span>
+        </div>
+        <div class="row-item" draggable="true">
+          <div class="row-dot" style="background:var(--sky)"></div>
+          <span class="row-text">Lead nuevo — Retail Norte</span>
+          <span class="tag tag-blue">Calificando</span>
+        </div>
+      </div>
+      <div class="mod-ft">
+        <span class="mod-count">12 leads activos</span>
+        <button class="mod-cta">Abrir módulo <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+      </div>
+    </div>
+
+    <!-- Tickets -->
+    <div class="mod" draggable="true">
+      <div class="mod-hd">
+        <div class="mod-ico" style="background:#faeeed;border-color:var(--rose)">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#9a3a3a" stroke-width="1.8"><path d="M15 5v2M15 11v2M15 17v2M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4V7a2 2 0 0 1 2-2z"/></svg>
+        </div>
+        <div>
+          <div class="mod-title">Tickets de Soporte</div>
+          <div class="mod-sub">Kanban drag & drop · Prioridades automáticas</div>
+        </div>
+      </div>
+      <div class="mod-list">
+        <div class="row-item" draggable="true">
+          <div class="row-dot" style="background:var(--rose)"></div>
+          <span class="row-text">#042 — Error en reporte mensual</span>
+          <span class="tag tag-err">Urgente</span>
+        </div>
+        <div class="row-item" draggable="true">
+          <div class="row-dot" style="background:var(--sand)"></div>
+          <span class="row-text">#041 — Acceso a módulo de RH</span>
+          <span class="tag tag-pend">En proceso</span>
+        </div>
+        <div class="row-item" draggable="true">
+          <div class="row-dot" style="background:var(--sage)"></div>
+          <span class="row-text">#040 — Actualización de datos</span>
+          <span class="tag tag-ok">Resuelto</span>
+        </div>
+      </div>
+      <div class="mod-ft">
+        <span class="mod-count">5 abiertos · 2 sin atender</span>
+        <button class="mod-cta">Abrir módulo <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom -->
+  <div class="bottom">
+
+    <div class="panel">
+      <div class="panel-hd">
+        <span class="panel-title">Actividad reciente</span>
+        <span class="panel-link">Ver todo</span>
+      </div>
+      <div class="act-list">
+        <div class="act-row">
+          <div class="act-ico" style="background:var(--sage-bg);border-color:var(--sage)">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="#3d7a5a" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <div class="act-title2">Contrato de María García firmado</div>
+            <div class="act-meta">RH · Firmó digitalmente vía DocuSign</div>
+          </div>
+          <span class="act-time">12m</span>
+        </div>
+        <div class="act-row">
+          <div class="act-ico" style="background:var(--sky-bg);border-color:var(--sky)">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="#3a7ab0" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4"/></svg>
+          </div>
+          <div>
+            <div class="act-title2">n8n ejecutó conciliación BBVA</div>
+            <div class="act-meta">Finanzas · 23 movimientos procesados</div>
+          </div>
+          <span class="act-time">18m</span>
+        </div>
+        <div class="act-row">
+          <div class="act-ico" style="background:#faeeed;border-color:var(--rose)">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="#9a3a3a" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <div>
+            <div class="act-title2">Ticket #042 escalado a urgente</div>
+            <div class="act-meta">Soporte · Asignado a Equipo Técnico</div>
+          </div>
+          <span class="act-time">45m</span>
+        </div>
+        <div class="act-row">
+          <div class="act-ico" style="background:var(--sand-bg);border-color:var(--sand)">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="#8a6a20" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          </div>
+          <div>
+            <div class="act-title2">Lead nuevo: Retail Norte</div>
+            <div class="act-meta">CRM · Ingresó por formulario web</div>
+          </div>
+          <span class="act-time">1h</span>
+        </div>
+        <div class="act-row">
+          <div class="act-ico" style="background:var(--lav-bg);border-color:var(--lavender)">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="#5a4e8a" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <div>
+            <div class="act-title2">Reporte mensual generado</div>
+            <div class="act-meta">Finanzas · PDF disponible</div>
+          </div>
+          <span class="act-time">2h</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-hd">
+        <span class="panel-title">Acciones rápidas</span>
+      </div>
+      <div class="quick-list">
+        <button class="quick-btn">
+          <div class="q-ico" style="background:var(--sky-bg);border-color:var(--sky)">
+            <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="#3a7ab0" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          </div>
+          Nueva conciliación manual
+        </button>
+        <button class="quick-btn">
+          <div class="q-ico" style="background:var(--sage-bg);border-color:var(--sage)">
+            <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="#3d7a5a" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          </div>
+          Crear contrato
+        </button>
+        <button class="quick-btn">
+          <div class="q-ico" style="background:#faeeed;border-color:var(--rose)">
+            <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="#9a3a3a" stroke-width="2"><path d="M15 5v2M15 11v2M15 17v2M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4V7a2 2 0 0 1 2-2z"/></svg>
+          </div>
+          Abrir ticket
+        </button>
+        <button class="quick-btn">
+          <div class="q-ico" style="background:var(--sand-bg);border-color:var(--sand)">
+            <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="#8a6a20" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          </div>
+          Agregar lead CRM
+        </button>
+        <button class="quick-btn">
+          <div class="q-ico" style="background:var(--lav-bg);border-color:var(--lavender)">
+            <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="#5a4e8a" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          Configurar flujo n8n
+        </button>
+        <button class="quick-btn">
+          <div class="q-ico" style="background:var(--surface-2);border-color:var(--border)">
+            <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="var(--ink-3)" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          </div>
+          Ver tablas Supabase
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+</div>
+
+<script>
+function setActive(el) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+}
+
+const ghost = document.getElementById('ghost');
+let dragging = null;
+
+document.querySelectorAll('[draggable="true"]').forEach(el => {
+  el.addEventListener('dragstart', e => {
+    dragging = el;
+    ghost.textContent = el.querySelector('.mod-title')?.textContent || el.querySelector('.row-text')?.textContent || '';
+    ghost.style.opacity = '1';
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => el.style.opacity = '.4', 0);
+  });
+  el.addEventListener('dragend', () => {
+    el.style.opacity = '1';
+    ghost.style.opacity = '0';
+    document.querySelectorAll('.drag-over').forEach(x => x.classList.remove('drag-over'));
+    dragging = null;
+  });
+});
+
+document.querySelectorAll('.mod').forEach(card => {
+  card.addEventListener('dragover', e => { e.preventDefault(); if (dragging && dragging !== card) card.classList.add('drag-over'); });
+  card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+  card.addEventListener('drop', e => {
+    e.preventDefault(); card.classList.remove('drag-over');
+    if (dragging?.classList.contains('mod') && dragging !== card) {
+      const p = card.parentNode, kids = [...p.children];
+      p.insertBefore(dragging, kids.indexOf(dragging) < kids.indexOf(card) ? card.nextSibling : card);
+    }
+  });
+});
+
+document.addEventListener('dragover', e => {
+  ghost.style.left = (e.clientX + 12) + 'px';
+  ghost.style.top  = (e.clientY + 8)  + 'px';
+});
+
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    document.querySelector('.search input').focus();
+  }
+});
+</script>
+</body>
+</html>

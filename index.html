@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coleg.IO — Yucatán</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #f9f7f4;
+  --surface:   #ffffff;
+  --surface-2: #f4f1ec;
+  --border:    #e8e3db;
+  --border-2:  #d6cfc4;
+
+  --ink-1: #1a1814;
+  --ink-2: #5a5650;
+  --ink-3: #9c9690;
+  --ink-4: #c4bfb8;
+
+  --sage:    #c8d5c0;
+  --sage-bg: #eef2eb;
+  --rose:    #e8c4c0;
+  --rose-bg: #faeeed;
+  --sky:     #b8cfe0;
+  --sky-bg:  #eaf2f8;
+  --sand:    #e0d4b8;
+  --sand-bg: #f7f2e8;
+  --lavender:#d0c8e8;
+  --lav-bg:  #f2eff8;
+
+  --sidebar-w: 220px;
+  --topbar-h:  56px;
+  --r: 10px;
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink-1);
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-rows: var(--topbar-h) 1fr;
+  height: 100vh;
+}
+
+/* ══ TOPBAR ══ */
+.topbar {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 32px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 17px; font-weight: 500;
+  color: var(--ink-1); letter-spacing: -.2px;
+  flex-shrink: 0;
+}
+.logo em { font-style: normal; color: var(--ink-3); font-weight: 400; }
+.logo-sep { width: 1px; height: 16px; background: var(--border-2); }
+.logo-region { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 400; color: var(--ink-3); letter-spacing: .3px; }
+
+.search {
+  flex: 1; max-width: 320px; margin-left: 8px;
+  display: flex; align-items: center; gap: 8px;
+  height: 32px; padding: 0 12px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+  transition: border-color .2s;
+}
+.search:focus-within { border-color: var(--border-2); background: #fff; }
+.search input { background: none; border: none; outline: none; color: var(--ink-1); font: inherit; flex: 1; }
+.search input::placeholder { color: var(--ink-4); }
+.search svg { color: var(--ink-4); flex-shrink: 0; }
+.search kbd { font-size: 10px; color: var(--ink-4); background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+
+.topbar-r { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.t-btn { width: 32px; height: 32px; border-radius: 8px; background: none; border: 1px solid transparent; color: var(--ink-3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .15s, border-color .15s, color .15s; }
+.t-btn:hover { background: var(--surface-2); border-color: var(--border); color: var(--ink-2); }
+.notif-wrap { position: relative; }
+.notif-pip { position: absolute; top: 7px; right: 7px; width: 5px; height: 5px; border-radius: 50%; background: var(--rose); border: 1.5px solid var(--surface); }
+.topbar-sep { width: 1px; height: 18px; background: var(--border); }
+.avatar-btn { display: flex; align-items: center; gap: 8px; padding: 3px 10px 3px 4px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: border-color .15s; }
+.avatar-btn:hover { border-color: var(--border-2); }
+.avatar-circle { width: 24px; height: 24px; border-radius: 6px; background: var(--lavender); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #5a4e8a; border: 1px solid rgba(0,0,0,.06); }
+.avatar-name { font-size: 12px; font-weight: 500; color: var(--ink-2); }
+
+/* ══ SIDEBAR ══ */
+.sidebar {
+  background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 24px 12px 20px;
+  overflow-y: auto;
+}
+.sidebar::-webkit-scrollbar { width: 0; }
+.nav-group { margin-bottom: 24px; }
+.nav-group-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; color: var(--ink-4); text-transform: uppercase; padding: 0 10px; margin-bottom: 4px; }
+.nav-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 8px; cursor: pointer; color: var(--ink-3); transition: background .15s, color .15s; position: relative; user-select: none; }
+.nav-item:hover { background: var(--surface-2); color: var(--ink-2); }
+.nav-item.active { background: var(--surface-2); color: var(--ink-1); }
+.nav-item.active .nav-dot { opacity: 1; }
+.nav-dot { position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 2px; height: 16px; border-radius: 2px; background: var(--ink-1); opacity: 0; transition: opacity .15s; }
+.nav-ico { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.nav-label { font-size: 13px; font-weight: 500; flex: 1; }
+.nav-badge { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 20px; border: 1px solid; }
+.sidebar-sep { height: 1px; background: var(--border); margin: 8px 4px 16px; }
+.sidebar-footer { margin-top: auto; }
+.user-row { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 8px; cursor: pointer; transition: background .15s; }
+.user-row:hover { background: var(--surface-2); }
+.user-av { width: 28px; height: 28px; border-radius: 7px; background: var(--lavender); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #5a4e8a; border: 1px solid rgba(0,0,0,.06); flex-shrink: 0; }
+.user-name { font-size: 12.5px; font-weight: 500; color: var(--ink-1); }
+.user-role { font-size: 11px; color: var(--ink-4); }
+
+/* ══ MAIN ══ */
+.main { overflow-y: auto; overflow-x: hidden; padding: 36px 40px; display: flex; flex-direction: column; gap: 28px; background: var(--bg); }
+.main::-webkit-scrollbar { width: 3px; }
+.main::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+
+/* Views — un solo .view activo a la vez */
+.view { display: none; flex-direction: column; gap: 28px; }
+.view.active { display: flex; }
+
+/* Page header */
+.page-hd { display: flex; align-items: flex-end; justify-content: space-between; }
+.page-hd h1 { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 400; color: var(--ink-1); letter-spacing: -.3px; line-height: 1; }
+.page-hd p { font-size: 12.5px; color: var(--ink-3); margin-top: 5px; font-weight: 300; }
+.hd-actions { display: flex; gap: 8px; }
+.btn { display: flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 8px; font: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer; transition: all .15s var(--ease); border: 1px solid; }
+.btn-ghost { background: var(--surface); border-color: var(--border); color: var(--ink-2); }
+.btn-ghost:hover { border-color: var(--border-2); color: var(--ink-1); }
+.btn-solid { background: var(--ink-1); border-color: var(--ink-1); color: #fff; }
+.btn-solid:hover { background: #2d2b27; }
+
+/* KPIs */
+.kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 20px 22px; position: relative; overflow: hidden; transition: border-color .2s, transform .2s; }
+.kpi:hover { border-color: var(--border-2); transform: translateY(-1px); }
+.kpi-accent { position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: var(--r) var(--r) 0 0; }
+.kpi-label { font-size: 11px; font-weight: 500; color: var(--ink-3); letter-spacing: .1px; }
+.kpi-val { font-family: 'Playfair Display', serif; font-size: 34px; font-weight: 400; color: var(--ink-1); line-height: 1; margin-top: 10px; }
+.kpi-trend { font-size: 11px; color: var(--ink-3); margin-top: 6px; }
+.kpi-trend b { color: var(--ink-2); }
+
+/* Tabla de conciliaciones */
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 22px 24px; }
+.panel-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.panel-title { font-size: 13.5px; font-weight: 600; color: var(--ink-1); }
+.panel-link { font-size: 12px; color: var(--ink-3); cursor: pointer; transition: color .15s; }
+.panel-link:hover { color: var(--ink-1); }
+
+table { width: 100%; border-collapse: collapse; }
+th { font-size: 11px; font-weight: 600; color: var(--ink-4); text-transform: uppercase; letter-spacing: .5px; padding: 0 12px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+td { padding: 10px 12px; font-size: 12.5px; color: var(--ink-2); border-bottom: 1px solid var(--border); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface-2); }
+
+.tag { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; border: 1px solid; white-space: nowrap; display: inline-block; }
+.tag-ok   { color: #3d7a5a; background: var(--sage-bg); border-color: var(--sage); }
+.tag-pend { color: #8a6a20; background: var(--sand-bg); border-color: var(--sand); }
+.tag-err  { color: #9a3a3a; background: #faeeed;        border-color: var(--rose); }
+.tag-blue { color: #2a5a8a; background: var(--sky-bg);  border-color: var(--sky);  }
+
+/* Estado de conexión */
+.conn-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-4); }
+.conn-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sand); }
+.conn-dot.ok { background: var(--sage); }
+.conn-dot.err { background: var(--rose); }
+
+/* Loading state */
+.loading { color: var(--ink-4); font-size: 12.5px; padding: 24px 0; text-align: center; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="logo">Coleg<em>.IO</em></div>
+  <div class="logo-sep"></div>
+  <span class="logo-region">Yucatán</span>
+
+  <div class="search">
+    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input placeholder="Buscar…" id="searchInput">
+    <kbd>⌘K</kbd>
+  </div>
+
+  <div class="topbar-r">
+    <div class="conn-badge" id="connBadge">
+      <div class="conn-dot" id="connDot"></div>
+      <span id="connLabel">Conectando…</span>
+    </div>
+    <div class="topbar-sep"></div>
+    <div class="notif-wrap">
+      <button class="t-btn">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </button>
+    </div>
+    <div class="topbar-sep"></div>
+    <div class="avatar-btn">
+      <div class="avatar-circle" id="avatarInitials">--</div>
+      <span class="avatar-name" id="avatarName">Cargando…</span>
+    </div>
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="nav-group">
+    <div class="nav-item active" data-view="inicio" onclick="navigate(this)">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:#f4f1ec;border-color:var(--border)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="var(--ink-2)" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <span class="nav-label">Inicio</span>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Módulos</div>
+
+    <div class="nav-item" data-view="conciliacion" onclick="navigate(this)">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--sky-bg);border-color:var(--sky)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#3a7ab0" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      </div>
+      <span class="nav-label">Conciliación</span>
+      <span class="nav-badge" id="badgePendientes" style="color:#2a5a8a;background:var(--sky-bg);border-color:var(--sky);display:none">0</span>
+    </div>
+
+    <div class="nav-item" data-view="cobranza" onclick="navigate(this)">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--sand-bg);border-color:var(--sand)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#8a6a20" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <span class="nav-label">Cobranza</span>
+    </div>
+
+    <div class="nav-item" data-view="rh" onclick="navigate(this)">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--sage-bg);border-color:var(--sage)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#3d7a5a" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <span class="nav-label">RH — Contratos</span>
+    </div>
+
+    <div class="nav-item" data-view="tickets" onclick="navigate(this)">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:#faeeed;border-color:var(--rose)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#9a3a3a" stroke-width="1.8"><path d="M15 5v2M15 11v2M15 17v2M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4V7a2 2 0 0 1 2-2z"/></svg>
+      </div>
+      <span class="nav-label">Tickets</span>
+    </div>
+  </div>
+
+  <div class="sidebar-sep"></div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Sistema</div>
+    <div class="nav-item" data-view="config" onclick="navigate(this)">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--surface-2);border-color:var(--border)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="var(--ink-3)" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </div>
+      <span class="nav-label">Configuración</span>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-sep"></div>
+    <div class="user-row">
+      <div class="user-av" id="sidebarInitials">--</div>
+      <div>
+        <div class="user-name" id="sidebarName">Cargando…</div>
+        <div class="user-role" id="sidebarRole">—</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- ══ VIEW: INICIO ══ -->
+  <div class="view active" id="view-inicio">
+    <div class="page-hd">
+      <div>
+        <h1>Panel principal</h1>
+        <p id="fechaHoy"></p>
+      </div>
+      <div class="hd-actions">
+        <button class="btn btn-ghost" onclick="refreshAll()">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4"/></svg>
+          Sincronizar
+        </button>
+      </div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="kpi-accent" style="background:var(--sky)"></div>
+        <div class="kpi-label">Conciliaciones pendientes</div>
+        <div class="kpi-val" id="kpi-pendientes">—</div>
+        <div class="kpi-trend" id="kpi-pendientes-sub">Cargando…</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-accent" style="background:var(--sage)"></div>
+        <div class="kpi-label">Conciliadas este periodo</div>
+        <div class="kpi-val" id="kpi-conciliadas">—</div>
+        <div class="kpi-trend" id="kpi-conciliadas-sub">Cargando…</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-accent" style="background:var(--sand)"></div>
+        <div class="kpi-label">En revisión</div>
+        <div class="kpi-val" id="kpi-revision">—</div>
+        <div class="kpi-trend" id="kpi-revision-sub">Cargando…</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-accent" style="background:var(--rose)"></div>
+        <div class="kpi-label">Rechazadas</div>
+        <div class="kpi-val" id="kpi-rechazadas">—</div>
+        <div class="kpi-trend" id="kpi-rechazadas-sub">Cargando…</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-hd">
+        <span class="panel-title">Últimos movimientos</span>
+        <span class="panel-link" onclick="navigate(document.querySelector('[data-view=conciliacion]'))">Ver todo →</span>
+      </div>
+      <div id="tabla-inicio-body">
+        <div class="loading">Cargando datos…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ VIEW: CONCILIACIÓN ══ -->
+  <div class="view" id="view-conciliacion">
+    <div class="page-hd">
+      <div>
+        <h1>Conciliación bancaria</h1>
+        <p>Revisión y aprobación de movimientos procesados por n8n</p>
+      </div>
+      <div class="hd-actions">
+        <button class="btn btn-ghost" onclick="loadConciliaciones()">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4"/></svg>
+          Actualizar
+        </button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-hd">
+        <span class="panel-title">Movimientos</span>
+        <span class="panel-link" id="filtro-label">Todos los estatus</span>
+      </div>
+      <div id="tabla-conciliacion-body">
+        <div class="loading">Cargando movimientos…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ VIEW: COBRANZA ══ -->
+  <div class="view" id="view-cobranza">
+    <div class="page-hd">
+      <div><h1>Cobranza</h1><p>Seguimiento de adeudos de alumnos</p></div>
+    </div>
+    <div class="panel">
+      <div class="loading">Módulo en construcción — disponible cuando Flujo 2 esté validado.</div>
+    </div>
+  </div>
+
+  <!-- ══ VIEW: RH ══ -->
+  <div class="view" id="view-rh">
+    <div class="page-hd"><div><h1>RH — Contratos</h1><p>Gestión de contratos del personal</p></div></div>
+    <div class="panel"><div class="loading">Módulo próximamente.</div></div>
+  </div>
+
+  <!-- ══ VIEW: TICKETS ══ -->
+  <div class="view" id="view-tickets">
+    <div class="page-hd"><div><h1>Tickets de soporte</h1><p>Seguimiento de incidencias internas</p></div></div>
+    <div class="panel"><div class="loading">Módulo próximamente.</div></div>
+  </div>
+
+  <!-- ══ VIEW: CONFIG ══ -->
+  <div class="view" id="view-config">
+    <div class="page-hd"><div><h1>Configuración</h1><p>Parámetros del sistema Coleg.IO</p></div></div>
+    <div class="panel">
+      <div class="panel-hd"><span class="panel-title">Conexión a Supabase</span></div>
+      <p style="font-size:12.5px;color:var(--ink-3);margin-bottom:16px">Edita las variables <code>SUPABASE_URL</code> y <code>SUPABASE_ANON_KEY</code> en el bloque <code>&lt;script&gt;</code> al final de este archivo para conectar con tu proyecto de Supabase.</p>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="conn-dot" id="configConnDot"></div>
+        <span id="configConnLabel" style="font-size:12.5px;color:var(--ink-3)">—</span>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  CONFIGURACIÓN — reemplaza estos valores
+//  con los de tu proyecto en supabase.com
+// ══════════════════════════════════════════
+const SUPABASE_URL      = 'https://kqbeoymmpbnhgwyhtfiq.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxYmVveW1tcGJuaGd3eWh0ZmlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMjU1MjIsImV4cCI6MjA5NzgwMTUyMn0.dJory8gvUyWce_7ICn3LVcWW0R-iJtXS8YmJvPjzEtY';
+
+// ══════════════════════════════════════════
+//  Inicialización Supabase
+// ══════════════════════════════════════════
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let connected = false;
+
+async function initSupabase() {
+  try {
+    // Prueba de conexión: leer una sola fila
+    const { error } = await db.from('conciliaciones').select('id').limit(1);
+    connected = !error;
+  } catch {
+    connected = false;
+  }
+  updateConnBadge();
+}
+
+function updateConnBadge() {
+  const dot   = document.getElementById('connDot');
+  const label = document.getElementById('connLabel');
+  const cDot  = document.getElementById('configConnDot');
+  const cLbl  = document.getElementById('configConnLabel');
+  if (connected) {
+    dot.className = 'conn-dot ok';
+    label.textContent = 'Conectado';
+    if (cDot) cDot.className = 'conn-dot ok';
+    if (cLbl) cLbl.textContent = 'Conexión activa con Supabase';
+  } else {
+    dot.className = 'conn-dot err';
+    label.textContent = 'Sin conexión';
+    if (cDot) cDot.className = 'conn-dot err';
+    if (cLbl) cLbl.textContent = 'No se pudo conectar. Revisa la URL y la Anon Key.';
+  }
+}
+
+// ══════════════════════════════════════════
+//  Navegación
+// ══════════════════════════════════════════
+function navigate(el) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  const view = el.dataset.view;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  if (view === 'conciliacion') loadConciliaciones();
+  if (view === 'inicio')       loadInicio();
+}
+
+// ══════════════════════════════════════════
+//  Helpers
+// ══════════════════════════════════════════
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const DIAS  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+function formatFecha(d) {
+  const dt = new Date(d);
+  return dt.toLocaleDateString('es-MX', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function formatMonto(n) {
+  return new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN' }).format(n);
+}
+
+const TAG_MAP = {
+  PENDIENTE:    '<span class="tag tag-pend">Pendiente</span>',
+  CONCILIADO:   '<span class="tag tag-ok">Conciliado</span>',
+  EN_REVISION:  '<span class="tag tag-blue">En revisión</span>',
+  RECHAZADO:    '<span class="tag tag-err">Rechazado</span>',
+};
+
+function tagEstatus(estatus) {
+  return TAG_MAP[estatus] || `<span class="tag">${estatus}</span>`;
+}
+
+// ══════════════════════════════════════════
+//  Datos — Inicio
+// ══════════════════════════════════════════
+async function loadInicio() {
+  if (!connected) {
+    document.getElementById('tabla-inicio-body').innerHTML = '<div class="loading">Sin conexión a Supabase — configura las credenciales.</div>';
+    return;
+  }
+
+  const { data, error } = await db
+    .from('conciliaciones')
+    .select('folio,fuente,fecha,monto,estatus')
+    .order('created_at', { ascending: false })
+    .limit(8);
+
+  if (error || !data) return;
+
+  // KPIs
+  const { data: counts } = await db
+    .from('conciliaciones')
+    .select('estatus');
+
+  if (counts) {
+    const c = { PENDIENTE: 0, CONCILIADO: 0, EN_REVISION: 0, RECHAZADO: 0 };
+    counts.forEach(r => { if (c[r.estatus] !== undefined) c[r.estatus]++; });
+    document.getElementById('kpi-pendientes').textContent  = c.PENDIENTE;
+    document.getElementById('kpi-conciliadas').textContent = c.CONCILIADO;
+    document.getElementById('kpi-revision').textContent    = c.EN_REVISION;
+    document.getElementById('kpi-rechazadas').textContent  = c.RECHAZADO;
+
+    const badge = document.getElementById('badgePendientes');
+    if (c.PENDIENTE > 0) {
+      badge.textContent = c.PENDIENTE;
+      badge.style.display = '';
+    }
+  }
+
+  // Tabla reciente
+  document.getElementById('tabla-inicio-body').innerHTML = renderTabla(data);
+}
+
+// ══════════════════════════════════════════
+//  Datos — Conciliaciones
+// ══════════════════════════════════════════
+async function loadConciliaciones() {
+  const body = document.getElementById('tabla-conciliacion-body');
+  body.innerHTML = '<div class="loading">Cargando…</div>';
+
+  if (!connected) {
+    body.innerHTML = '<div class="loading">Sin conexión a Supabase — configura las credenciales.</div>';
+    return;
+  }
+
+  const { data, error } = await db
+    .from('conciliaciones')
+    .select('folio,fuente,fecha,monto,estatus,notas,periodo')
+    .order('fecha', { ascending: false });
+
+  if (error || !data) {
+    body.innerHTML = '<div class="loading">Error al cargar datos.</div>';
+    return;
+  }
+
+  body.innerHTML = renderTabla(data, true);
+}
+
+function renderTabla(rows, full = false) {
+  if (!rows.length) return '<div class="loading">Sin registros.</div>';
+  const extraCols = full ? '<th>Periodo</th><th>Notas</th>' : '';
+  const header = `<table>
+    <thead><tr>
+      <th>Folio</th><th>Fuente</th><th>Fecha</th><th>Monto</th><th>Estatus</th>${extraCols}
+    </tr></thead><tbody>`;
+  const rowsHtml = rows.map(r => {
+    const extra = full
+      ? `<td>${r.periodo || '—'}</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notas || '—'}</td>`
+      : '';
+    return `<tr>
+      <td style="font-family:monospace;font-size:12px">${r.folio || '—'}</td>
+      <td>${r.fuente || '—'}</td>
+      <td>${r.fecha ? formatFecha(r.fecha) : '—'}</td>
+      <td>${r.monto != null ? formatMonto(r.monto) : '—'}</td>
+      <td>${tagEstatus(r.estatus)}</td>
+      ${extra}
+    </tr>`;
+  }).join('');
+  return header + rowsHtml + '</tbody></table>';
+}
+
+async function refreshAll() {
+  await loadInicio();
+}
+
+// ══════════════════════════════════════════
+//  Bootstrap
+// ══════════════════════════════════════════
+(async function init() {
+  // Fecha
+  const hoy = new Date();
+  document.getElementById('fechaHoy').textContent =
+    `${DIAS[hoy.getDay()]}, ${hoy.getDate()} de ${MESES[hoy.getMonth()]} de ${hoy.getFullYear()}`;
+
+  // Usuario mock — reemplazar con auth de Supabase cuando se configure
+  const initials = 'AR';
+  const name     = 'Administrador';
+  const role     = 'Super admin';
+  document.getElementById('avatarInitials').textContent  = initials;
+  document.getElementById('avatarName').textContent      = name;
+  document.getElementById('sidebarInitials').textContent = initials;
+  document.getElementById('sidebarName').textContent     = name;
+  document.getElementById('sidebarRole').textContent     = role;
+
+  // Supabase
+  await initSupabase();
+  loadInicio();
+})();
+
+// Atajo búsqueda
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    document.getElementById('searchInput').focus();
+  }
+});
+</script>
+</body>
+</html>
