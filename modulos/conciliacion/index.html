@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conciliación — Coleg.IO</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #f9f7f4;
+  --surface:   #ffffff;
+  --surface-2: #f4f1ec;
+  --border:    #e8e3db;
+  --border-2:  #d6cfc4;
+  --ink-1: #1a1814;
+  --ink-2: #5a5650;
+  --ink-3: #9c9690;
+  --ink-4: #c4bfb8;
+  --sage:    #c8d5c0; --sage-bg: #eef2eb;
+  --rose:    #e8c4c0; --rose-bg: #faeeed;
+  --sky:     #b8cfe0; --sky-bg:  #eaf2f8;
+  --sand:    #e0d4b8; --sand-bg: #f7f2e8;
+  --lavender:#d0c8e8; --lav-bg:  #f2eff8;
+  --sidebar-w: 220px;
+  --topbar-h:  56px;
+  --r: 10px;
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+
+html, body { height: 100%; background: var(--bg); color: var(--ink-1); font-family: 'Inter', sans-serif; font-size: 13.5px; overflow: hidden; -webkit-font-smoothing: antialiased; }
+
+.app { display: grid; grid-template-columns: var(--sidebar-w) 1fr; grid-template-rows: var(--topbar-h) 1fr; height: 100vh; }
+
+/* TOPBAR */
+.topbar { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; padding: 0 32px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.logo { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 500; color: var(--ink-1); letter-spacing: -.2px; flex-shrink: 0; text-decoration: none; }
+.logo em { font-style: normal; color: var(--ink-3); font-weight: 400; }
+.logo-sep { width: 1px; height: 16px; background: var(--border-2); }
+.logo-region { font-size: 11px; color: var(--ink-3); letter-spacing: .3px; }
+.breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-3); }
+.breadcrumb a { color: var(--ink-3); text-decoration: none; transition: color .15s; }
+.breadcrumb a:hover { color: var(--ink-1); }
+.breadcrumb span { color: var(--ink-4); }
+.topbar-r { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.conn-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-4); }
+.conn-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sand); }
+.conn-dot.ok { background: var(--sage); }
+.conn-dot.err { background: var(--rose); }
+.topbar-sep { width: 1px; height: 18px; background: var(--border); }
+.avatar-btn { display: flex; align-items: center; gap: 8px; padding: 3px 10px 3px 4px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; }
+.avatar-circle { width: 24px; height: 24px; border-radius: 6px; background: var(--lavender); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #5a4e8a; }
+.avatar-name { font-size: 12px; font-weight: 500; color: var(--ink-2); }
+
+/* SIDEBAR */
+.sidebar { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 24px 12px 20px; overflow-y: auto; }
+.sidebar::-webkit-scrollbar { width: 0; }
+.nav-group { margin-bottom: 24px; }
+.nav-group-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; color: var(--ink-4); text-transform: uppercase; padding: 0 10px; margin-bottom: 4px; }
+.nav-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 8px; cursor: pointer; color: var(--ink-3); text-decoration: none; transition: background .15s, color .15s; position: relative; }
+.nav-item:hover { background: var(--surface-2); color: var(--ink-2); }
+.nav-item.active { background: var(--surface-2); color: var(--ink-1); }
+.nav-item.active .nav-dot { opacity: 1; }
+.nav-dot { position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 2px; height: 16px; border-radius: 2px; background: var(--ink-1); opacity: 0; transition: opacity .15s; }
+.nav-ico { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.nav-label { font-size: 13px; font-weight: 500; flex: 1; }
+.sidebar-sep { height: 1px; background: var(--border); margin: 8px 4px 16px; }
+.sidebar-footer { margin-top: auto; }
+.user-row { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 8px; }
+.user-av { width: 28px; height: 28px; border-radius: 7px; background: var(--lavender); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #5a4e8a; flex-shrink: 0; }
+.user-name { font-size: 12.5px; font-weight: 500; color: var(--ink-1); }
+.user-role { font-size: 11px; color: var(--ink-4); }
+
+/* MAIN */
+.main { overflow-y: auto; overflow-x: hidden; padding: 36px 40px; display: flex; flex-direction: column; gap: 24px; background: var(--bg); }
+.main::-webkit-scrollbar { width: 3px; }
+.main::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+
+/* Header */
+.page-hd { display: flex; align-items: flex-end; justify-content: space-between; }
+.page-hd h1 { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 400; letter-spacing: -.3px; line-height: 1; }
+.page-hd p { font-size: 12.5px; color: var(--ink-3); margin-top: 5px; font-weight: 300; }
+.hd-actions { display: flex; gap: 8px; }
+.btn { display: flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 8px; font: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer; transition: all .15s var(--ease); border: 1px solid; }
+.btn-ghost { background: var(--surface); border-color: var(--border); color: var(--ink-2); }
+.btn-ghost:hover { border-color: var(--border-2); color: var(--ink-1); }
+.btn-solid { background: var(--ink-1); border-color: var(--ink-1); color: #fff; }
+.btn-solid:hover { background: #2d2b27; }
+.btn-ok   { background: var(--sage-bg); border-color: var(--sage); color: #3d7a5a; }
+.btn-ok:hover { background: #ddecd7; }
+.btn-err  { background: var(--rose-bg); border-color: var(--rose); color: #9a3a3a; }
+.btn-err:hover { background: #f5dedd; }
+
+/* KPIs */
+.kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 16px 18px; position: relative; overflow: hidden; cursor: pointer; transition: border-color .2s, transform .2s; }
+.kpi:hover { border-color: var(--border-2); transform: translateY(-1px); }
+.kpi.selected { border-color: var(--border-2); box-shadow: 0 0 0 2px var(--border-2); }
+.kpi-accent { position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: var(--r) var(--r) 0 0; }
+.kpi-label { font-size: 10.5px; font-weight: 500; color: var(--ink-3); letter-spacing: .1px; }
+.kpi-val { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 400; color: var(--ink-1); line-height: 1; margin-top: 8px; }
+.kpi-sub { font-size: 10.5px; color: var(--ink-4); margin-top: 4px; }
+
+/* Filters */
+.filters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.filter-group { display: flex; align-items: center; gap: 6px; }
+.filter-label { font-size: 11px; font-weight: 500; color: var(--ink-3); }
+select, input[type=text] {
+  height: 32px; padding: 0 10px; border-radius: 7px;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--ink-1); font: inherit; font-size: 12.5px;
+  outline: none; transition: border-color .15s;
+  cursor: pointer;
+}
+select:focus, input[type=text]:focus { border-color: var(--border-2); }
+.filter-sep { width: 1px; height: 20px; background: var(--border); }
+.search-wrap { display: flex; align-items: center; gap: 8px; padding: 0 10px; height: 32px; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; transition: border-color .15s; }
+.search-wrap:focus-within { border-color: var(--border-2); }
+.search-wrap input { border: none; outline: none; background: none; font: inherit; font-size: 12.5px; color: var(--ink-1); width: 180px; }
+.search-wrap input::placeholder { color: var(--ink-4); }
+
+/* Panel / Table */
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+.panel-hd { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.panel-title { font-size: 13px; font-weight: 600; color: var(--ink-1); }
+.panel-count { font-size: 11px; color: var(--ink-4); }
+
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { font-size: 10.5px; font-weight: 600; color: var(--ink-4); text-transform: uppercase; letter-spacing: .5px; padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; background: var(--surface); position: sticky; top: 0; }
+td { padding: 10px 14px; font-size: 12.5px; color: var(--ink-2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface-2); }
+tr.selected-row td { background: var(--sky-bg); }
+
+.tag { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; border: 1px solid; white-space: nowrap; display: inline-block; }
+.tag-ok    { color: #3d7a5a; background: var(--sage-bg); border-color: var(--sage); }
+.tag-pend  { color: #8a6a20; background: var(--sand-bg); border-color: var(--sand); }
+.tag-err   { color: #9a3a3a; background: var(--rose-bg); border-color: var(--rose); }
+.tag-blue  { color: #2a5a8a; background: var(--sky-bg);  border-color: var(--sky);  }
+.tag-lav   { color: #5a4e8a; background: var(--lav-bg);  border-color: var(--lavender); }
+.tag-gray  { color: var(--ink-3); background: var(--surface-2); border-color: var(--border); }
+
+/* Acciones de fila */
+.row-actions { display: flex; gap: 5px; opacity: 0; transition: opacity .15s; }
+tr:hover .row-actions { opacity: 1; }
+.act-btn { padding: 3px 10px; border-radius: 5px; font: inherit; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid; transition: all .1s; }
+
+/* Modal de detalle */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.25); z-index: 100; display: none; align-items: center; justify-content: center; }
+.overlay.open { display: flex; }
+.modal { background: var(--surface); border-radius: 12px; padding: 28px 32px; width: 520px; max-width: 95vw; box-shadow: 0 8px 40px rgba(0,0,0,.12); position: relative; }
+.modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; cursor: pointer; color: var(--ink-3); font-size: 18px; line-height: 1; }
+.modal-close:hover { color: var(--ink-1); }
+.modal h2 { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 400; margin-bottom: 20px; }
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.modal-field label { font-size: 10.5px; font-weight: 600; color: var(--ink-4); text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 4px; }
+.modal-field p { font-size: 13px; color: var(--ink-1); }
+.modal-field.full { grid-column: 1 / -1; }
+.modal-notes { width: 100%; height: 72px; padding: 8px 12px; border-radius: 7px; border: 1px solid var(--border); font: inherit; font-size: 13px; color: var(--ink-1); resize: none; outline: none; transition: border-color .15s; margin-bottom: 16px; }
+.modal-notes:focus { border-color: var(--border-2); }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Paginación */
+.pagination { display: flex; align-items: center; gap: 8px; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--border); }
+.pag-btn { width: 28px; height: 28px; border-radius: 6px; background: none; border: 1px solid var(--border); color: var(--ink-3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+.pag-btn:hover:not(:disabled) { border-color: var(--border-2); color: var(--ink-1); }
+.pag-btn:disabled { opacity: .35; cursor: default; }
+.pag-info { font-size: 12px; color: var(--ink-3); }
+
+/* Loading / empty */
+.state-msg { padding: 48px 0; text-align: center; color: var(--ink-4); font-size: 13px; }
+
+/* Toast */
+.toast { position: fixed; bottom: 24px; right: 24px; padding: 10px 18px; border-radius: 8px; font-size: 12.5px; font-weight: 500; z-index: 999; opacity: 0; transform: translateY(8px); transition: all .2s; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast-ok  { background: var(--sage-bg);  border: 1px solid var(--sage);  color: #3d7a5a; }
+.toast-err { background: var(--rose-bg); border: 1px solid var(--rose); color: #9a3a3a; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- Modal detalle -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2 id="modal-title">Detalle del movimiento</h2>
+    <div class="modal-grid">
+      <div class="modal-field"><label>Folio</label><p id="m-folio">—</p></div>
+      <div class="modal-field"><label>Fuente</label><p id="m-fuente">—</p></div>
+      <div class="modal-field"><label>Fecha</label><p id="m-fecha">—</p></div>
+      <div class="modal-field"><label>Periodo</label><p id="m-periodo">—</p></div>
+      <div class="modal-field"><label>Monto banco</label><p id="m-mbanco">—</p></div>
+      <div class="modal-field"><label>Monto sistema</label><p id="m-msistema">—</p></div>
+      <div class="modal-field"><label>Alumno</label><p id="m-alumno">—</p></div>
+      <div class="modal-field"><label>Clave</label><p id="m-clave">—</p></div>
+      <div class="modal-field"><label>Nivel / Grado</label><p id="m-nivel">—</p></div>
+      <div class="modal-field"><label>Forma de pago</label><p id="m-pago">—</p></div>
+      <div class="modal-field full"><label>Concepto</label><p id="m-concepto">—</p></div>
+      <div class="modal-field full"><label>Descripción banco</label><p id="m-desc">—</p></div>
+      <div class="modal-field full"><label>Clasificación automática</label><p id="m-clasif">—</p></div>
+    </div>
+    <label style="font-size:10.5px;font-weight:600;color:var(--ink-4);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Notas del operador</label>
+    <textarea class="modal-notes" id="modal-notas" placeholder="Agrega comentarios sobre este movimiento…"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-err" onclick="accionModal('RECHAZADO')">Rechazar</button>
+      <button class="btn btn-ok"  onclick="accionModal('EN_REVISION')">En revisión</button>
+      <button class="btn btn-solid" onclick="accionModal('APROBADO')">Aprobar</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <a href="../../index.html" class="logo">Coleg<em>.IO</em></a>
+  <div class="logo-sep"></div>
+  <span class="logo-region">Yucatán</span>
+  <div class="breadcrumb">
+    <span>›</span>
+    <a href="../../index.html">Inicio</a>
+    <span>›</span>
+    <span style="color:var(--ink-2)">Conciliación</span>
+  </div>
+  <div class="topbar-r">
+    <div class="conn-badge">
+      <div class="conn-dot" id="connDot"></div>
+      <span id="connLabel">Conectando…</span>
+    </div>
+    <div class="topbar-sep"></div>
+    <div class="avatar-btn">
+      <div class="avatar-circle">AR</div>
+      <span class="avatar-name">Administrador</span>
+    </div>
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="nav-group">
+    <a class="nav-item" href="../../index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:#f4f1ec;border:1px solid var(--border)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="var(--ink-2)" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <span class="nav-label">Inicio</span>
+    </a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Módulos</div>
+    <a class="nav-item active" href="index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--sky-bg);border:1px solid var(--sky)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#3a7ab0" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      </div>
+      <span class="nav-label">Conciliación</span>
+    </a>
+    <a class="nav-item" href="../../index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--sand-bg);border:1px solid var(--sand)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#8a6a20" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      </div>
+      <span class="nav-label">Cobranza</span>
+    </a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="sidebar-sep"></div>
+    <div class="user-row">
+      <div class="user-av">AR</div>
+      <div>
+        <div class="user-name">Administrador</div>
+        <div class="user-role">Super admin</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <div class="page-hd">
+    <div>
+      <h1>Conciliación bancaria</h1>
+      <p>Revisión y aprobación de movimientos procesados por n8n</p>
+    </div>
+    <div class="hd-actions">
+      <button class="btn btn-ghost" onclick="cargarDatos()">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4"/></svg>
+        Actualizar
+      </button>
+    </div>
+  </div>
+
+  <!-- KPIs (clic para filtrar) -->
+  <div class="kpi-row">
+    <div class="kpi" id="kpi-todos" onclick="filtrarPorEstatus(null, this)">
+      <div class="kpi-accent" style="background:var(--border-2)"></div>
+      <div class="kpi-label">Total registros</div>
+      <div class="kpi-val" id="k-total">—</div>
+      <div class="kpi-sub">todos los estatus</div>
+    </div>
+    <div class="kpi" id="kpi-pend" onclick="filtrarPorEstatus('PENDIENTE', this)">
+      <div class="kpi-accent" style="background:var(--sand)"></div>
+      <div class="kpi-label">Pendientes</div>
+      <div class="kpi-val" id="k-pend">—</div>
+      <div class="kpi-sub">requieren revisión</div>
+    </div>
+    <div class="kpi" id="kpi-apro" onclick="filtrarPorEstatus('APROBADO', this)">
+      <div class="kpi-accent" style="background:var(--sage)"></div>
+      <div class="kpi-label">Aprobados</div>
+      <div class="kpi-val" id="k-apro">—</div>
+      <div class="kpi-sub">conciliados</div>
+    </div>
+    <div class="kpi" id="kpi-revi" onclick="filtrarPorEstatus('EN_REVISION', this)">
+      <div class="kpi-accent" style="background:var(--sky)"></div>
+      <div class="kpi-label">En revisión</div>
+      <div class="kpi-val" id="k-revi">—</div>
+      <div class="kpi-sub">asignados a revisar</div>
+    </div>
+    <div class="kpi" id="kpi-rech" onclick="filtrarPorEstatus('RECHAZADO', this)">
+      <div class="kpi-accent" style="background:var(--rose)"></div>
+      <div class="kpi-label">Rechazados</div>
+      <div class="kpi-val" id="k-rech">—</div>
+      <div class="kpi-sub">no conciliados</div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filters">
+    <div class="search-wrap">
+      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="var(--ink-4)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="busqueda" placeholder="Buscar folio, nombre, referencia…" oninput="aplicarFiltros()">
+    </div>
+    <div class="filter-sep"></div>
+    <div class="filter-group">
+      <span class="filter-label">Fuente</span>
+      <select id="f-fuente" onchange="aplicarFiltros()">
+        <option value="">Todas</option>
+        <option value="SANTANDER">Santander</option>
+        <option value="HSBC">HSBC</option>
+        <option value="SISTEMA">Sistema</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Periodo</span>
+      <select id="f-periodo" onchange="aplicarFiltros()">
+        <option value="">Todos</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Clasificación</span>
+      <select id="f-clasif" onchange="aplicarFiltros()">
+        <option value="">Todas</option>
+        <option value="COINCIDE">Coincide</option>
+        <option value="AFIL">AFIL</option>
+        <option value="SIN_COINCIDENCIA">Sin coincidencia</option>
+        <option value="TRANSITO_SALIENTE">Tránsito saliente</option>
+      </select>
+    </div>
+    <button class="btn btn-ghost" onclick="limpiarFiltros()" style="padding:6px 12px;font-size:11.5px">
+      Limpiar filtros
+    </button>
+  </div>
+
+  <!-- Tabla -->
+  <div class="panel">
+    <div class="panel-hd">
+      <span class="panel-title">Movimientos</span>
+      <span class="panel-count" id="panel-count">—</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Folio</th>
+            <th>Fuente</th>
+            <th>Fecha</th>
+            <th>Periodo</th>
+            <th>Monto banco</th>
+            <th>Monto sistema</th>
+            <th>Alumno</th>
+            <th>Clasificación</th>
+            <th>Estatus</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tabla-body">
+          <tr><td colspan="10" class="state-msg">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <span class="pag-info" id="pag-info">—</span>
+      <button class="pag-btn" id="btn-prev" onclick="cambiarPagina(-1)" disabled>
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="pag-btn" id="btn-next" onclick="cambiarPagina(1)" disabled>
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+const SUPABASE_URL      = 'https://kqbeoymmpbnhgwyhtfiq.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxYmVveW1tcGJuaGd3eWh0ZmlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMjU1MjIsImV4cCI6MjA5NzgwMTUyMn0.dJory8gvUyWce_7ICn3LVcWW0R-iJtXS8YmJvPjzEtY';
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── Estado global ─────────────────────────────
+let todos      = [];   // todos los registros de Supabase
+let filtrados  = [];   // después de aplicar filtros
+let pagina     = 1;
+const POR_PAG  = 25;
+let modalReg   = null; // registro abierto en modal
+let filtroPorEstatus = null;
+
+// ── Helpers ───────────────────────────────────
+const MXN = n => n != null ? new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n) : '—';
+const FECHA = d => d ? new Date(d).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+
+const TAG = {
+  APROBADO:       '<span class="tag tag-ok">Aprobado</span>',
+  PENDIENTE:      '<span class="tag tag-pend">Pendiente</span>',
+  EN_REVISION:    '<span class="tag tag-blue">En revisión</span>',
+  RECHAZADO:      '<span class="tag tag-err">Rechazado</span>',
+  COINCIDE:       '<span class="tag tag-ok">Coincide</span>',
+  AFIL:           '<span class="tag tag-lav">AFIL</span>',
+  SIN_COINCIDENCIA:'<span class="tag tag-err">Sin coincidencia</span>',
+  TRANSITO_SALIENTE:'<span class="tag tag-gray">Tránsito</span>',
+};
+const tag = v => TAG[v] || `<span class="tag tag-gray">${v||'—'}</span>`;
+
+function toast(msg, tipo = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast toast-${tipo} show`;
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── Conexión ──────────────────────────────────
+async function initConexion() {
+  try {
+    const { error } = await db.from('conciliaciones').select('id').limit(1);
+    const ok = !error;
+    document.getElementById('connDot').className   = `conn-dot ${ok ? 'ok' : 'err'}`;
+    document.getElementById('connLabel').textContent = ok ? 'Conectado' : 'Sin conexión';
+    return ok;
+  } catch { return false; }
+}
+
+// ── Carga de datos ────────────────────────────
+async function cargarDatos() {
+  document.getElementById('tabla-body').innerHTML =
+    '<tr><td colspan="10" class="state-msg">Cargando…</td></tr>';
+
+  const { data, error } = await db
+    .from('conciliaciones')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error || !data) {
+    document.getElementById('tabla-body').innerHTML =
+      '<tr><td colspan="10" class="state-msg">Error al cargar datos.</td></tr>';
+    return;
+  }
+
+  todos = data;
+
+  // KPIs
+  const cnt = { PENDIENTE:0, APROBADO:0, EN_REVISION:0, RECHAZADO:0 };
+  todos.forEach(r => { if (cnt[r.estatus] !== undefined) cnt[r.estatus]++; });
+  document.getElementById('k-total').textContent = todos.length;
+  document.getElementById('k-pend').textContent  = cnt.PENDIENTE;
+  document.getElementById('k-apro').textContent  = cnt.APROBADO;
+  document.getElementById('k-revi').textContent  = cnt.EN_REVISION;
+  document.getElementById('k-rech').textContent  = cnt.RECHAZADO;
+
+  // Opciones de periodo
+  const periodos = [...new Set(todos.map(r => r.periodo).filter(Boolean))].sort().reverse();
+  const sel = document.getElementById('f-periodo');
+  const valActual = sel.value;
+  sel.innerHTML = '<option value="">Todos</option>' +
+    periodos.map(p => `<option value="${p}" ${p===valActual?'selected':''}>${p}</option>`).join('');
+
+  aplicarFiltros();
+}
+
+// ── Filtros ───────────────────────────────────
+function aplicarFiltros() {
+  const busq   = document.getElementById('busqueda').value.toLowerCase();
+  const fuente = document.getElementById('f-fuente').value;
+  const periodo= document.getElementById('f-periodo').value;
+  const clasif = document.getElementById('f-clasif').value;
+
+  filtrados = todos.filter(r => {
+    if (filtroPorEstatus && r.estatus !== filtroPorEstatus) return false;
+    if (fuente  && r.fuente        !== fuente)  return false;
+    if (periodo && r.periodo       !== periodo) return false;
+    if (clasif  && r.clasificacion !== clasif)  return false;
+    if (busq) {
+      const haystack = [r.folio, r.nombre, r.referencia, r.clave_alumno, r.descripcion]
+        .filter(Boolean).join(' ').toLowerCase();
+      if (!haystack.includes(busq)) return false;
+    }
+    return true;
+  });
+
+  pagina = 1;
+  renderTabla();
+}
+
+function filtrarPorEstatus(estatus, el) {
+  filtroPorEstatus = estatus;
+  document.querySelectorAll('.kpi').forEach(k => k.classList.remove('selected'));
+  if (el) el.classList.add('selected');
+  aplicarFiltros();
+}
+
+function limpiarFiltros() {
+  filtroPorEstatus = null;
+  document.getElementById('busqueda').value = '';
+  document.getElementById('f-fuente').value  = '';
+  document.getElementById('f-periodo').value = '';
+  document.getElementById('f-clasif').value  = '';
+  document.querySelectorAll('.kpi').forEach(k => k.classList.remove('selected'));
+  aplicarFiltros();
+}
+
+// ── Render tabla ──────────────────────────────
+function renderTabla() {
+  const total = filtrados.length;
+  const inicio = (pagina - 1) * POR_PAG;
+  const pagina_items = filtrados.slice(inicio, inicio + POR_PAG);
+
+  document.getElementById('panel-count').textContent =
+    `${total} movimiento${total !== 1 ? 's' : ''}`;
+  document.getElementById('pag-info').textContent =
+    total > POR_PAG ? `${inicio+1}–${Math.min(inicio+POR_PAG, total)} de ${total}` : `${total} registros`;
+  document.getElementById('btn-prev').disabled = pagina <= 1;
+  document.getElementById('btn-next').disabled = inicio + POR_PAG >= total;
+
+  if (!pagina_items.length) {
+    document.getElementById('tabla-body').innerHTML =
+      '<tr><td colspan="10" class="state-msg">Sin registros con los filtros aplicados.</td></tr>';
+    return;
+  }
+
+  document.getElementById('tabla-body').innerHTML = pagina_items.map(r => `
+    <tr onclick="abrirModal('${r.id}')">
+      <td style="font-family:monospace;font-size:11.5px">${r.folio || '—'}</td>
+      <td>${r.fuente || '—'}</td>
+      <td>${FECHA(r.fecha)}</td>
+      <td>${r.periodo || '—'}</td>
+      <td style="text-align:right">${MXN(r.monto_banco)}</td>
+      <td style="text-align:right">${MXN(r.monto_sistema)}</td>
+      <td>${r.nombre || '—'}</td>
+      <td>${tag(r.clasificacion)}</td>
+      <td>${tag(r.estatus)}</td>
+      <td>
+        <div class="row-actions" onclick="event.stopPropagation()">
+          <button class="act-btn btn-ok"  onclick="actualizarEstatus('${r.id}','APROBADO')">✓</button>
+          <button class="act-btn btn-err" onclick="actualizarEstatus('${r.id}','RECHAZADO')">✕</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function cambiarPagina(delta) {
+  pagina = Math.max(1, pagina + delta);
+  renderTabla();
+  document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Acciones estatus ──────────────────────────
+async function actualizarEstatus(id, estatus, notas = null) {
+  const payload = { estatus, revisado_at: new Date().toISOString(), revisado_por: 'Administrador' };
+  if (notas !== null) payload.notas = notas;
+
+  const { error } = await db.from('conciliaciones').update(payload).eq('id', id);
+  if (error) { toast('Error al actualizar', 'err'); return false; }
+  toast(estatus === 'APROBADO' ? 'Movimiento aprobado' :
+        estatus === 'RECHAZADO' ? 'Movimiento rechazado' : 'Estatus actualizado');
+  await cargarDatos();
+  return true;
+}
+
+// ── Modal detalle ─────────────────────────────
+function abrirModal(id) {
+  modalReg = todos.find(r => r.id === id);
+  if (!modalReg) return;
+  const r = modalReg;
+  document.getElementById('modal-title').textContent = `Movimiento — ${r.folio || r.referencia || r.id.slice(0,8)}`;
+  document.getElementById('m-folio').textContent    = r.folio || '—';
+  document.getElementById('m-fuente').textContent   = r.fuente || '—';
+  document.getElementById('m-fecha').textContent    = FECHA(r.fecha);
+  document.getElementById('m-periodo').textContent  = r.periodo || '—';
+  document.getElementById('m-mbanco').textContent   = MXN(r.monto_banco);
+  document.getElementById('m-msistema').textContent = MXN(r.monto_sistema);
+  document.getElementById('m-alumno').textContent   = r.nombre || '—';
+  document.getElementById('m-clave').textContent    = r.clave_alumno || '—';
+  document.getElementById('m-nivel').textContent    = [r.nivel, r.grado].filter(Boolean).join(' / ') || '—';
+  document.getElementById('m-pago').textContent     = r.forma_pago || '—';
+  document.getElementById('m-concepto').textContent = r.concepto || '—';
+  document.getElementById('m-desc').textContent     = r.descripcion || '—';
+  document.getElementById('m-clasif').innerHTML     = tag(r.clasificacion);
+  document.getElementById('modal-notas').value      = r.notas || '';
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  modalReg = null;
+}
+
+async function accionModal(estatus) {
+  if (!modalReg) return;
+  const notas = document.getElementById('modal-notas').value.trim();
+  const ok = await actualizarEstatus(modalReg.id, estatus, notas || null);
+  if (ok) closeModal();
+}
+
+document.getElementById('overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+// ── Init ──────────────────────────────────────
+(async () => {
+  const ok = await initConexion();
+  if (ok) await cargarDatos();
+  else document.getElementById('tabla-body').innerHTML =
+    '<tr><td colspan="10" class="state-msg">Sin conexión a Supabase.</td></tr>';
+})();
+</script>
+</body>
+</html>

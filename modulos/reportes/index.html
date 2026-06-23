@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reportes — Coleg.IO</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:        #f9f7f4;
+  --surface:   #ffffff;
+  --surface-2: #f4f1ec;
+  --border:    #e8e3db;
+  --border-2:  #d6cfc4;
+  --ink-1: #1a1814; --ink-2: #5a5650; --ink-3: #9c9690; --ink-4: #c4bfb8;
+  --sage:  #c8d5c0; --sage-bg:  #eef2eb; --sage-d: #3d7a5a;
+  --rose:  #e8c4c0; --rose-bg:  #faeeed; --rose-d: #9a3a3a;
+  --sky:   #b8cfe0; --sky-bg:   #eaf2f8; --sky-d:  #2a5a8a;
+  --sand:  #e0d4b8; --sand-bg:  #f7f2e8; --sand-d: #8a6a20;
+  --lav:   #d0c8e8; --lav-bg:   #f2eff8; --lav-d:  #5a4e8a;
+  --sidebar-w: 220px; --topbar-h: 56px; --r: 10px;
+  --ease: cubic-bezier(.4,0,.2,1);
+  /* Colores de gráfica */
+  --c1:#8ABFB0; --c2:#E8B89A; --c3:#A8C5DA; --c4:#D4B8E0; --c5:#F0D080; --c6:#B8D8A0; --c7:#E8A0A0;
+}
+html, body { height: 100%; background: var(--bg); color: var(--ink-1); font-family: 'Inter', sans-serif; font-size: 13.5px; -webkit-font-smoothing: antialiased; }
+.app { display: grid; grid-template-columns: var(--sidebar-w) 1fr; grid-template-rows: var(--topbar-h) 1fr; height: 100vh; }
+
+/* ── Topbar ──────────────────────────────────────────────── */
+.topbar { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; padding: 0 32px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.logo { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 500; text-decoration: none; color: var(--ink-1); }
+.logo em { font-style: normal; color: var(--ink-3); }
+.logo-sep { width: 1px; height: 16px; background: var(--border-2); }
+.logo-region { font-size: 11px; color: var(--ink-3); letter-spacing: .3px; }
+.breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-3); }
+.breadcrumb a { color: var(--ink-3); text-decoration: none; } .breadcrumb a:hover { color: var(--ink-1); }
+.breadcrumb span { color: var(--ink-4); }
+.topbar-r { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.conn-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-4); }
+.conn-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sand); }
+.conn-dot.ok { background: var(--sage); } .conn-dot.err { background: var(--rose); }
+.topbar-sep { width: 1px; height: 18px; background: var(--border); }
+
+/* ── Sidebar ─────────────────────────────────────────────── */
+.sidebar { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 24px 12px 20px; overflow-y: auto; }
+.sidebar::-webkit-scrollbar { width: 0; }
+.nav-group { margin-bottom: 24px; }
+.nav-group-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; color: var(--ink-4); text-transform: uppercase; padding: 0 10px; margin-bottom: 4px; }
+.nav-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 8px; cursor: pointer; color: var(--ink-3); text-decoration: none; transition: background .15s, color .15s; position: relative; }
+.nav-item:hover { background: var(--surface-2); color: var(--ink-2); }
+.nav-item.active { background: var(--surface-2); color: var(--ink-1); }
+.nav-item.active .nav-dot { opacity: 1; }
+.nav-dot { position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 2px; height: 16px; border-radius: 2px; background: var(--ink-1); opacity: 0; transition: opacity .15s; }
+.nav-ico { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.nav-label { font-size: 13px; font-weight: 500; flex: 1; }
+.sidebar-sep { height: 1px; background: var(--border); margin: 8px 4px 16px; }
+.sidebar-footer { margin-top: auto; }
+.user-row { display: flex; align-items: center; gap: 9px; padding: 8px 10px; }
+.user-av { width: 28px; height: 28px; border-radius: 7px; background: var(--lav); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: var(--lav-d); flex-shrink: 0; }
+.user-name { font-size: 12.5px; font-weight: 500; }
+.user-role { font-size: 11px; color: var(--ink-4); }
+
+/* ── Main ────────────────────────────────────────────────── */
+.main { overflow-y: auto; overflow-x: hidden; background: var(--bg); }
+.main::-webkit-scrollbar { width: 3px; }
+.main::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+.main-inner { padding: 36px 40px; display: flex; flex-direction: column; gap: 28px; }
+
+/* ── Controls ────────────────────────────────────────────── */
+.page-hd { display: flex; align-items: flex-end; justify-content: space-between; }
+.page-hd h1 { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 400; letter-spacing: -.3px; }
+.page-hd p { font-size: 12.5px; color: var(--ink-3); margin-top: 5px; font-weight: 300; }
+.controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 8px; font: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer; border: 1px solid; transition: all .15s; }
+.btn-ghost { background: var(--surface); border-color: var(--border); color: var(--ink-2); }
+.btn-ghost:hover { border-color: var(--border-2); color: var(--ink-1); }
+.btn-solid { background: var(--ink-1); border-color: var(--ink-1); color: #fff; }
+.btn-solid:hover { background: #2d2b27; }
+.btn-lav { background: var(--lav-bg); border-color: var(--lav); color: var(--lav-d); }
+.btn-lav:hover { background: #e8e3f5; }
+select, input[type=date] { height: 32px; padding: 0 10px; border-radius: 7px; background: var(--surface); border: 1px solid var(--border); color: var(--ink-1); font: inherit; font-size: 12.5px; outline: none; transition: border-color .15s; cursor: pointer; }
+select:focus, input[type=date]:focus { border-color: var(--border-2); }
+.filter-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.filter-label { font-size: 11px; font-weight: 500; color: var(--ink-3); }
+.filter-sep { width: 1px; height: 20px; background: var(--border); }
+
+/* ── Section titles ──────────────────────────────────────── */
+.section-title { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 400; color: var(--ink-1); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+.section-title span { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500; color: var(--ink-4); }
+
+/* ── Panel ───────────────────────────────────────────────── */
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+.panel-hd { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.panel-title { font-size: 12.5px; font-weight: 600; color: var(--ink-1); }
+.panel-sub { font-size: 11px; color: var(--ink-4); }
+.panel-body { padding: 20px; }
+
+/* ── KPIs ────────────────────────────────────────────────── */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 18px 20px; position: relative; overflow: hidden; }
+.kpi-accent { position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: var(--r) var(--r) 0 0; }
+.kpi-label { font-size: 10.5px; font-weight: 600; color: var(--ink-3); letter-spacing: .2px; text-transform: uppercase; }
+.kpi-val { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 400; color: var(--ink-1); line-height: 1.1; margin-top: 10px; }
+.kpi-sub { font-size: 11px; color: var(--ink-4); margin-top: 4px; }
+
+/* ── Chart grid ──────────────────────────────────────────── */
+.chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.chart-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.chart-wrap { padding: 20px; position: relative; height: 260px; }
+.chart-wrap-tall { padding: 20px; position: relative; height: 320px; }
+
+/* ── Table ───────────────────────────────────────────────── */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { font-size: 10.5px; font-weight: 600; color: var(--ink-4); text-transform: uppercase; letter-spacing: .5px; padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 9px 14px; font-size: 12.5px; color: var(--ink-2); border-bottom: 1px solid var(--border); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface-2); }
+.td-num { text-align: right; font-variant-numeric: tabular-nums; }
+.td-bold { font-weight: 600; color: var(--ink-1); }
+.td-mono { font-family: monospace; font-size: 11.5px; }
+
+/* ── Tags ────────────────────────────────────────────────── */
+.tag { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; border: 1px solid; display: inline-block; white-space: nowrap; }
+.tag-ok   { color: var(--sage-d); background: var(--sage-bg); border-color: var(--sage); }
+.tag-pend { color: var(--sand-d); background: var(--sand-bg); border-color: var(--sand); }
+.tag-err  { color: var(--rose-d); background: var(--rose-bg); border-color: var(--rose); }
+.tag-blue { color: var(--sky-d);  background: var(--sky-bg);  border-color: var(--sky); }
+.tag-lav  { color: var(--lav-d);  background: var(--lav-bg);  border-color: var(--lav); }
+
+/* ── Cartera rows ────────────────────────────────────────── */
+.cartera-total { background: var(--surface-2); font-weight: 600; }
+.cartera-total td { border-top: 1px solid var(--border-2); color: var(--ink-1); }
+
+/* ── Conclusiones ────────────────────────────────────────── */
+.conclusion-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.conclusion-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; }
+.conclusion-icon { font-size: 18px; margin-bottom: 8px; }
+.conclusion-title { font-size: 12px; font-weight: 600; color: var(--ink-2); margin-bottom: 4px; }
+.conclusion-text { font-size: 12px; color: var(--ink-3); line-height: 1.5; }
+.conclusion-val { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--ink-1); margin-top: 4px; }
+
+/* ── Estado vacío ────────────────────────────────────────── */
+.state-msg { padding: 32px; text-align: center; color: var(--ink-4); font-size: 13px; }
+
+/* ── Resumen general ─────────────────────────────────────── */
+.resumen-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.resumen-item { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+.resumen-label { font-size: 11px; color: var(--ink-3); font-weight: 500; }
+.resumen-val { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--ink-1); margin-top: 4px; }
+
+/* ══════════════════════════════════════════════════════════
+   PRINT / EXPORT STYLES
+   ══════════════════════════════════════════════════════════ */
+@media print {
+  @page { size: A4; margin: 18mm 15mm 18mm 15mm; }
+  html, body { height: auto; background: #fff; font-size: 11px; color: #000; }
+  .app { display: block; height: auto; }
+  .sidebar, .topbar { display: none !important; }
+  .main { overflow: visible; }
+  .main-inner { padding: 0; gap: 20px; }
+  .print-hide { display: none !important; }
+  .print-break { page-break-before: always; }
+  .chart-wrap, .chart-wrap-tall { height: 200px !important; }
+  .panel { border: 1px solid #ccc; border-radius: 6px; break-inside: avoid; }
+  .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+  .chart-grid-2, .chart-grid-3 { break-inside: avoid; }
+  .conclusion-grid, .resumen-grid { grid-template-columns: repeat(2, 1fr); break-inside: avoid; }
+
+  /* Encabezado de reporte para impresión */
+  .print-header { display: flex !important; }
+}
+.print-header {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #000;
+  margin-bottom: 20px;
+}
+.print-header-logo { font-family: 'Playfair Display', serif; font-size: 22px; }
+.print-header-meta { text-align: right; font-size: 10px; color: #555; }
+</style>
+</head>
+<body>
+
+<!-- Encabezado solo visible en impresión -->
+<div class="print-header" id="printHeader">
+  <div>
+    <div class="print-header-logo">Coleg<em style="font-style:normal;color:#888">.IO</em></div>
+    <div style="font-size:11px;color:#555;margin-top:2px">Colegio Yucatán SCP</div>
+  </div>
+  <div class="print-header-meta">
+    <div id="print-titulo" style="font-size:13px;font-weight:600;color:#000">Reporte de Conciliación Bancaria</div>
+    <div id="print-fecha"></div>
+    <div id="print-periodo"></div>
+  </div>
+</div>
+
+<div class="app">
+
+<!-- TOPBAR -->
+<header class="topbar print-hide">
+  <a href="../../index.html" class="logo">Coleg<em>.IO</em></a>
+  <div class="logo-sep"></div>
+  <span class="logo-region">Yucatán</span>
+  <div class="breadcrumb">
+    <span>›</span><a href="../../index.html">Inicio</a>
+    <span>›</span><span style="color:var(--ink-2)">Reportes</span>
+  </div>
+  <div class="topbar-r">
+    <div class="conn-badge">
+      <div class="conn-dot" id="connDot"></div>
+      <span id="connLabel">Conectando…</span>
+    </div>
+    <div class="topbar-sep"></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:3px 10px 3px 4px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px">
+      <div class="user-av" style="width:24px;height:24px;border-radius:6px;font-size:10px">AR</div>
+      <span style="font-size:12px;font-weight:500;color:var(--ink-2)">Administrador</span>
+    </div>
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<aside class="sidebar print-hide">
+  <div class="nav-group">
+    <a class="nav-item" href="../../index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--surface-2);border:1px solid var(--border)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="var(--ink-2)" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <span class="nav-label">Inicio</span>
+    </a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Módulos</div>
+    <a class="nav-item" href="../conciliacion/index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--sky-bg);border:1px solid var(--sky)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#3a7ab0" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      </div>
+      <span class="nav-label">Conciliación</span>
+    </a>
+    <a class="nav-item active" href="index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--lav-bg);border:1px solid var(--lav)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#5a4e8a" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <span class="nav-label">Reportes</span>
+    </a>
+    <a class="nav-item" href="../../index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--sand-bg);border:1px solid var(--sand)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#8a6a20" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      </div>
+      <span class="nav-label">Cobranza</span>
+    </a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="sidebar-sep"></div>
+    <div class="user-row">
+      <div class="user-av">AR</div>
+      <div><div class="user-name">Administrador</div><div class="user-role">Super admin</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+<div class="main-inner">
+
+  <!-- Header -->
+  <div class="page-hd">
+    <div>
+      <h1>Reportes financieros</h1>
+      <p>Análisis en tiempo real desde Supabase · Actualización automática al cargar</p>
+    </div>
+    <div class="controls print-hide">
+      <div class="filter-row">
+        <span class="filter-label">Desde</span>
+        <input type="date" id="f-desde">
+        <span class="filter-label">Hasta</span>
+        <input type="date" id="f-hasta">
+        <div class="filter-sep"></div>
+        <select id="f-cuenta">
+          <option value="">Todas las cuentas</option>
+          <option value="SANTANDER">Santander</option>
+          <option value="HSBC">HSBC</option>
+          <option value="SISTEMA">Sistema</option>
+        </select>
+        <button class="btn btn-ghost" onclick="cargarDatos()">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4"/></svg>
+          Actualizar
+        </button>
+        <button class="btn btn-lav" onclick="exportarPDF()">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ① Ingresos totales -->
+  <div>
+    <div class="section-title">① Ingresos totales <span id="lbl-periodo-rango">—</span></div>
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-accent" style="background:var(--sage)"></div>
+        <div class="kpi-label">Total aprobado</div>
+        <div class="kpi-val" id="k-total">$—</div>
+        <div class="kpi-sub" id="k-total-n">— movimientos</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-accent" style="background:var(--sand)"></div>
+        <div class="kpi-label">Pendiente revisión</div>
+        <div class="kpi-val" id="k-pend">$—</div>
+        <div class="kpi-sub" id="k-pend-n">— movimientos</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-accent" style="background:var(--sky)"></div>
+        <div class="kpi-label">Tránsito / Sin coincidencia</div>
+        <div class="kpi-val" id="k-transito">$—</div>
+        <div class="kpi-sub" id="k-transito-n">— movimientos</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-accent" style="background:var(--lav)"></div>
+        <div class="kpi-label">Total general</div>
+        <div class="kpi-val" id="k-general">$—</div>
+        <div class="kpi-sub" id="k-general-n">— registros</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② y ③ Tipo de pago y cuenta -->
+  <div class="chart-grid-2">
+    <div class="panel">
+      <div class="panel-hd"><span class="panel-title">② Ingresos por tipo de pago</span></div>
+      <div class="chart-wrap"><canvas id="chartPago"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-hd"><span class="panel-title">③ Ingresos por cuenta bancaria</span></div>
+      <div class="chart-wrap"><canvas id="chartCuenta"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ④ Total por día por cuenta -->
+  <div class="panel">
+    <div class="panel-hd">
+      <span class="panel-title">④ Ingresos diarios por cuenta</span>
+      <span class="panel-sub">monto aprobado acumulado</span>
+    </div>
+    <div class="chart-wrap-tall"><canvas id="chartDiario"></canvas></div>
+  </div>
+
+  <!-- ⑤ Colegiaturas por periodo / cartera -->
+  <div class="panel">
+    <div class="panel-hd">
+      <span class="panel-title">⑤ Colegiaturas por periodo — Cartera</span>
+      <span class="panel-sub">Año pasado · Anticipada · Mes actual · Vencida</span>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="tbl-wrap">
+        <table id="tbl-cartera">
+          <thead><tr>
+            <th>Grado</th>
+            <th>Año pasado</th>
+            <th>Anticipada</th>
+            <th>Mes actual</th>
+            <th>Vencida</th>
+            <th>Total grado</th>
+          </tr></thead>
+          <tbody id="body-cartera"><tr><td colspan="6" class="state-msg">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑥ Ingresos por nivel -->
+  <div class="panel">
+    <div class="panel-hd"><span class="panel-title">⑥ Ingresos por nivel educativo</span></div>
+    <div class="chart-wrap"><canvas id="chartNivel"></canvas></div>
+  </div>
+
+  <!-- ⑦ Movimientos en tránsito -->
+  <div class="panel print-break">
+    <div class="panel-hd">
+      <span class="panel-title">⑦ Movimientos en tránsito / sin coincidencia</span>
+      <span class="panel-sub" id="lbl-transito-count">—</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Folio</th><th>Fuente</th><th>Fecha</th><th>Alumno</th>
+          <th>Concepto</th><th>Monto banco</th><th>Clasificación</th><th>Detalle / Notas</th>
+        </tr></thead>
+        <tbody id="body-transito"><tr><td colspan="8" class="state-msg">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ⑧ Resumen general -->
+  <div>
+    <div class="section-title">⑧ Resumen general</div>
+    <div class="resumen-grid" id="resumen-grid">
+      <div class="resumen-item"><div class="resumen-label">Registros totales procesados</div><div class="resumen-val" id="r-total">—</div></div>
+      <div class="resumen-item"><div class="resumen-label">Tasa de conciliación</div><div class="resumen-val" id="r-tasa">—%</div></div>
+      <div class="resumen-item"><div class="resumen-label">Promedio diario</div><div class="resumen-val" id="r-prom">$—</div></div>
+      <div class="resumen-item"><div class="resumen-label">Cuenta con más ingresos</div><div class="resumen-val" id="r-cuenta">—</div></div>
+      <div class="resumen-item"><div class="resumen-label">Día de mayor ingreso</div><div class="resumen-val" id="r-dia">—</div></div>
+      <div class="resumen-item"><div class="resumen-label">Periodo con más actividad</div><div class="resumen-val" id="r-periodo">—</div></div>
+    </div>
+  </div>
+
+  <!-- ⑨ Conclusiones -->
+  <div>
+    <div class="section-title">⑨ Conclusiones automáticas</div>
+    <div class="conclusion-grid" id="conclusion-grid">
+      <!-- generadas dinámicamente -->
+    </div>
+  </div>
+
+  <!-- Footer del reporte -->
+  <div style="text-align:center;font-size:11px;color:var(--ink-4);padding:12px 0;border-top:1px solid var(--border)">
+    Generado por <strong>Coleg.IO</strong> · Colegio Yucatán SCP · <span id="footer-fecha"></span>
+  </div>
+
+</div><!-- /main-inner -->
+</main>
+</div><!-- /app -->
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   CONFIG
+   ══════════════════════════════════════════════════════════ */
+const SUPABASE_URL      = 'https://kqbeoymmpbnhgwyhtfiq.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxYmVveW1tcGJuaGd3eWh0ZmlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMjU1MjIsImV4cCI6MjA5NzgwMTUyMn0.dJory8gvUyWce_7ICn3LVcWW0R-iJtXS8YmJvPjzEtY';
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ── Helpers ──────────────────────────────────────────────── */
+const MXN = n => n != null ? new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0}).format(n) : '$0';
+const MXN2 = n => n != null ? new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n) : '$0.00';
+const FMT = d => d ? new Date(d+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+const MESES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+const PALETTE = ['#8ABFB0','#E8B89A','#A8C5DA','#D4B8E0','#F0D080','#B8D8A0','#E8A0A0','#A0C8E0','#C8B8A0','#D0E8A0'];
+
+const TAG = { COINCIDE:'<span class="tag tag-ok">Coincide</span>', AFIL:'<span class="tag tag-lav">AFIL</span>', SIN_COINCIDENCIA:'<span class="tag tag-err">Sin coinc.</span>', TRANSITO_SALIENTE:'<span class="tag tag-blue">Tránsito</span>' };
+const tag = v => TAG[v] || `<span class="tag" style="background:var(--surface-2);border-color:var(--border);color:var(--ink-3)">${v||'—'}</span>`;
+
+/* Chart.js defaults */
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.size   = 11;
+Chart.defaults.color       = '#9c9690';
+Chart.defaults.plugins.legend.labels.padding = 16;
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+Chart.defaults.plugins.legend.labels.pointStyleWidth = 8;
+
+let charts = {};
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+/* ── Periodo helper ──────────────────────────────────────── */
+function clasificarPeriodo(periodo) {
+  if (!periodo) return 'sin_periodo';
+  const hoy   = new Date();
+  const mesAct = hoy.getMonth();      // 0-11
+  const anyoAct = hoy.getFullYear();
+
+  // Intentar parsear "MES AAAA" (ej: "ENERO 2026")
+  const partes = periodo.trim().toUpperCase().split(/\s+/);
+  const mes   = MESES.indexOf(partes[0]);
+  const anyo  = parseInt(partes[1]) || 0;
+  if (mes === -1 || !anyo) return 'sin_periodo';
+
+  if (anyo < anyoAct) return 'anio_pasado';
+  if (anyo === anyoAct && mes < mesAct) return 'vencida';
+  if (anyo === anyoAct && mes === mesAct) return 'mes_actual';
+  return 'anticipada'; // futuro
+}
+
+/* ── Filtros de fecha ────────────────────────────────────── */
+function initFiltros() {
+  const hoy   = new Date();
+  const ini   = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  document.getElementById('f-desde').value = ini.toISOString().slice(0,10);
+  document.getElementById('f-hasta').value = hoy.toISOString().slice(0,10);
+  document.getElementById('footer-fecha').textContent = hoy.toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
+  document.getElementById('print-fecha').textContent = 'Generado: ' + hoy.toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
+}
+
+/* ── Conexión ────────────────────────────────────────────── */
+async function initConexion() {
+  try {
+    const { error } = await db.from('conciliaciones').select('id').limit(1);
+    const ok = !error;
+    document.getElementById('connDot').className   = `conn-dot ${ok?'ok':'err'}`;
+    document.getElementById('connLabel').textContent = ok ? 'Conectado' : 'Sin conexión';
+    return ok;
+  } catch { return false; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   CARGA PRINCIPAL
+   ══════════════════════════════════════════════════════════ */
+async function cargarDatos() {
+  const desde  = document.getElementById('f-desde').value;
+  const hasta  = document.getElementById('f-hasta').value;
+  const cuenta = document.getElementById('f-cuenta').value;
+
+  // Label de rango
+  document.getElementById('lbl-periodo-rango').textContent =
+    desde && hasta ? `${FMT(desde)} — ${FMT(hasta)}` : '';
+  document.getElementById('print-periodo').textContent =
+    desde && hasta ? `Periodo: ${FMT(desde)} al ${FMT(hasta)}` : '';
+
+  // Query
+  let q = db.from('conciliaciones').select('*');
+  if (desde) q = q.gte('fecha', desde);
+  if (hasta) q = q.lte('fecha', hasta + 'T23:59:59');
+  if (cuenta) q = q.eq('fuente', cuenta);
+  q = q.order('fecha', { ascending: true });
+
+  const { data, error } = await q;
+  if (error || !data) return;
+
+  renderTodo(data, desde, hasta);
+}
+
+function renderTodo(rows, desde, hasta) {
+  renderKPIs(rows);
+  renderChartPago(rows);
+  renderChartCuenta(rows);
+  renderChartDiario(rows);
+  renderCartera(rows);
+  renderChartNivel(rows);
+  renderTransito(rows);
+  renderResumen(rows, desde, hasta);
+  renderConclusiones(rows);
+}
+
+/* ── ① KPIs ──────────────────────────────────────────────── */
+function renderKPIs(rows) {
+  const aprobados = rows.filter(r => r.estatus === 'APROBADO');
+  const pendientes = rows.filter(r => r.estatus === 'PENDIENTE' || r.estatus === 'EN_REVISION');
+  const transito  = rows.filter(r => r.clasificacion === 'TRANSITO_SALIENTE' || r.clasificacion === 'SIN_COINCIDENCIA');
+
+  const sum = arr => arr.reduce((s,r) => s + (parseFloat(r.monto_banco)||0), 0);
+
+  const tApro = sum(aprobados);
+  const tPend = sum(pendientes);
+  const tTran = sum(transito);
+  const tTodo = sum(rows);
+
+  document.getElementById('k-total').textContent    = MXN(tApro);
+  document.getElementById('k-total-n').textContent  = `${aprobados.length} movimientos aprobados`;
+  document.getElementById('k-pend').textContent     = MXN(tPend);
+  document.getElementById('k-pend-n').textContent   = `${pendientes.length} movimientos pendientes`;
+  document.getElementById('k-transito').textContent = MXN(tTran);
+  document.getElementById('k-transito-n').textContent = `${transito.length} movimientos`;
+  document.getElementById('k-general').textContent  = MXN(tTodo);
+  document.getElementById('k-general-n').textContent = `${rows.length} registros totales`;
+}
+
+/* ── ② Tipo de pago ──────────────────────────────────────── */
+function renderChartPago(rows) {
+  destroyChart('pago');
+  const map = {};
+  rows.filter(r=>r.estatus==='APROBADO').forEach(r => {
+    const fp = r.forma_pago || 'Sin especificar';
+    map[fp] = (map[fp]||0) + (parseFloat(r.monto_banco)||0);
+  });
+  const labels = Object.keys(map);
+  const vals   = Object.values(map);
+  if (!labels.length) return;
+
+  const ctx = document.getElementById('chartPago').getContext('2d');
+  charts.pago = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: vals, backgroundColor: PALETTE, borderWidth: 0, hoverOffset: 6 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '62%',
+      plugins: {
+        legend: { position: 'right' },
+        tooltip: { callbacks: { label: c => ` ${MXN(c.raw)} (${((c.raw/vals.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)` } }
+      }
+    }
+  });
+}
+
+/* ── ③ Cuenta bancaria ───────────────────────────────────── */
+function renderChartCuenta(rows) {
+  destroyChart('cuenta');
+  const map = { SANTANDER: 0, HSBC: 0, SISTEMA: 0 };
+  rows.filter(r=>r.estatus==='APROBADO').forEach(r => {
+    if (map[r.fuente] !== undefined) map[r.fuente] += parseFloat(r.monto_banco)||0;
+    else map[r.fuente||'Otro'] = (map[r.fuente||'Otro']||0) + (parseFloat(r.monto_banco)||0);
+  });
+  const labels = Object.keys(map).filter(k=>map[k]>0);
+  const vals   = labels.map(k=>map[k]);
+  if (!labels.length) return;
+
+  const colors = { SANTANDER:'#E8A87C', HSBC:'#6A9FD4', SISTEMA:'#8ABFB0' };
+  const ctx = document.getElementById('chartCuenta').getContext('2d');
+  charts.cuenta = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ data: vals, backgroundColor: labels.map(l=>colors[l]||PALETTE[4]), borderRadius: 6, borderWidth: 0 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' '+MXN(c.raw) } } },
+      scales: { y: { grid: { color: '#f0ece4' }, ticks: { callback: v => MXN(v) } }, x: { grid: { display: false } } }
+    }
+  });
+}
+
+/* ── ④ Diario por cuenta ─────────────────────────────────── */
+function renderChartDiario(rows) {
+  destroyChart('diario');
+  const apros = rows.filter(r => r.estatus === 'APROBADO' && r.fecha);
+  const dias  = [...new Set(apros.map(r => r.fecha.slice(0,10)))].sort();
+  const cuentas = [...new Set(apros.map(r => r.fuente||'Otro'))];
+  const colors  = { SANTANDER:'#E8A87C', HSBC:'#6A9FD4', SISTEMA:'#8ABFB0' };
+
+  const datasets = cuentas.map((c,i) => ({
+    label: c,
+    data: dias.map(d => apros.filter(r=>r.fecha?.slice(0,10)===d && r.fuente===c).reduce((s,r)=>s+(parseFloat(r.monto_banco)||0),0)),
+    borderColor: colors[c]||PALETTE[i],
+    backgroundColor: (colors[c]||PALETTE[i])+'30',
+    fill: true, tension: .4, borderWidth: 2, pointRadius: 3
+  }));
+
+  if (!dias.length) return;
+  const ctx = document.getElementById('chartDiario').getContext('2d');
+  charts.diario = new Chart(ctx, {
+    type: 'line',
+    data: { labels: dias.map(d => new Date(d+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short'})), datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${MXN(c.raw)}` } } },
+      scales: { y: { grid: { color: '#f0ece4' }, ticks: { callback: v => MXN(v) } }, x: { grid: { display: false } } }
+    }
+  });
+}
+
+/* ── ⑤ Cartera por periodo ───────────────────────────────── */
+function renderCartera(rows) {
+  const colegiaturas = rows.filter(r =>
+    r.concepto && (r.concepto.toLowerCase().includes('colegiatura') || r.concepto.toLowerCase().includes('mensualidad'))
+    && r.estatus === 'APROBADO'
+  );
+
+  // Agrupar por grado
+  const grades = [...new Set(colegiaturas.map(r=>r.grado||'Sin grado'))].sort();
+  const tipos  = ['anio_pasado','anticipada','mes_actual','vencida'];
+  const tipoLabel = { anio_pasado:'Año pasado', anticipada:'Anticipada', mes_actual:'Mes actual', vencida:'Vencida' };
+
+  // Totales por tipo para footer
+  const totalesTipo = { anio_pasado:0, anticipada:0, mes_actual:0, vencida:0 };
+
+  let html = '';
+  let totGlobal = 0;
+
+  if (!grades.length) {
+    document.getElementById('body-cartera').innerHTML = '<tr><td colspan="6" class="state-msg">Sin registros de colegiatura aprobados en el periodo.</td></tr>';
+    return;
+  }
+
+  grades.forEach(grado => {
+    const reg = colegiaturas.filter(r=>(r.grado||'Sin grado')===grado);
+    const t = { anio_pasado:0, anticipada:0, mes_actual:0, vencida:0 };
+    reg.forEach(r => { const c = clasificarPeriodo(r.periodo); if (t[c]!==undefined) t[c]+=(parseFloat(r.monto_banco)||0); });
+    const total = Object.values(t).reduce((a,b)=>a+b,0);
+    totGlobal += total;
+    tipos.forEach(tp => { totalesTipo[tp] += t[tp]; });
+    html += `<tr>
+      <td class="td-bold">${grado}</td>
+      ${tipos.map(tp => `<td class="td-num">${t[tp]>0?MXN2(t[tp]):'—'}</td>`).join('')}
+      <td class="td-num td-bold">${MXN2(total)}</td>
+    </tr>`;
+  });
+
+  // Fila de totales
+  html += `<tr class="cartera-total">
+    <td>TOTAL</td>
+    ${tipos.map(tp=>`<td class="td-num">${MXN2(totalesTipo[tp])}</td>`).join('')}
+    <td class="td-num">${MXN2(totGlobal)}</td>
+  </tr>`;
+
+  document.getElementById('body-cartera').innerHTML = html;
+}
+
+/* ── ⑥ Por nivel ─────────────────────────────────────────── */
+function renderChartNivel(rows) {
+  destroyChart('nivel');
+  const map = {};
+  rows.filter(r=>r.estatus==='APROBADO').forEach(r => {
+    const nv = r.nivel || 'Sin nivel';
+    map[nv] = (map[nv]||0) + (parseFloat(r.monto_banco)||0);
+  });
+  const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  if (!sorted.length) return;
+
+  const ctx = document.getElementById('chartNivel').getContext('2d');
+  charts.nivel = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(e=>e[0]),
+      datasets: [{ data: sorted.map(e=>e[1]), backgroundColor: PALETTE, borderRadius: 6, borderWidth: 0 }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' '+MXN(c.raw) } } },
+      scales: { x: { grid: { color: '#f0ece4' }, ticks: { callback: v => MXN(v) } }, y: { grid: { display: false } } }
+    }
+  });
+}
+
+/* ── ⑦ Tránsito ──────────────────────────────────────────── */
+function renderTransito(rows) {
+  const lista = rows.filter(r => r.clasificacion === 'TRANSITO_SALIENTE' || r.clasificacion === 'SIN_COINCIDENCIA');
+  document.getElementById('lbl-transito-count').textContent = `${lista.length} registros`;
+  if (!lista.length) {
+    document.getElementById('body-transito').innerHTML = '<tr><td colspan="8" class="state-msg">Sin movimientos en tránsito.</td></tr>';
+    return;
+  }
+  document.getElementById('body-transito').innerHTML = lista.map(r => `<tr>
+    <td class="td-mono">${r.folio||'—'}</td>
+    <td>${r.fuente||'—'}</td>
+    <td>${FMT(r.fecha)}</td>
+    <td>${r.nombre||'—'}</td>
+    <td>${r.concepto||'—'}</td>
+    <td class="td-num">${MXN2(r.monto_banco)}</td>
+    <td>${tag(r.clasificacion)}</td>
+    <td style="max-width:200px;white-space:normal;font-size:11.5px;color:var(--ink-3)">${r.notas||r.descripcion||'—'}</td>
+  </tr>`).join('');
+}
+
+/* ── ⑧ Resumen ───────────────────────────────────────────── */
+function renderResumen(rows, desde, hasta) {
+  const apros = rows.filter(r=>r.estatus==='APROBADO');
+  const total = apros.reduce((s,r)=>s+(parseFloat(r.monto_banco)||0),0);
+  const tasa  = rows.length ? ((apros.length/rows.length)*100).toFixed(1) : 0;
+
+  // Promedio diario
+  const dias = [...new Set(apros.map(r=>r.fecha?.slice(0,10)).filter(Boolean))];
+  const prom = dias.length ? total/dias.length : 0;
+
+  // Cuenta líder
+  const mapC = {}; apros.forEach(r=>{mapC[r.fuente||'N/A']=(mapC[r.fuente||'N/A']||0)+(parseFloat(r.monto_banco)||0);});
+  const cuentaLider = Object.entries(mapC).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
+
+  // Día máximo
+  const mapD = {}; apros.forEach(r=>{if(r.fecha){const d=r.fecha.slice(0,10);mapD[d]=(mapD[d]||0)+(parseFloat(r.monto_banco)||0);}});
+  const diaPeak = Object.entries(mapD).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
+
+  // Periodo más activo
+  const mapP = {}; rows.forEach(r=>{if(r.periodo)mapP[r.periodo]=(mapP[r.periodo]||0)+1;});
+  const periodoTop = Object.entries(mapP).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
+
+  document.getElementById('r-total').textContent  = rows.length.toLocaleString('es-MX');
+  document.getElementById('r-tasa').textContent   = tasa + '%';
+  document.getElementById('r-prom').textContent   = MXN(prom);
+  document.getElementById('r-cuenta').textContent = cuentaLider;
+  document.getElementById('r-dia').textContent    = diaPeak !== '—' ? FMT(diaPeak) : '—';
+  document.getElementById('r-periodo').textContent= periodoTop;
+}
+
+/* ── ⑨ Conclusiones ──────────────────────────────────────── */
+function renderConclusiones(rows) {
+  const apros   = rows.filter(r=>r.estatus==='APROBADO');
+  const pends   = rows.filter(r=>r.estatus==='PENDIENTE');
+  const tran    = rows.filter(r=>r.clasificacion==='TRANSITO_SALIENTE'||r.clasificacion==='SIN_COINCIDENCIA');
+  const total   = apros.reduce((s,r)=>s+(parseFloat(r.monto_banco)||0),0);
+  const tasa    = rows.length ? ((apros.length/rows.length)*100).toFixed(0) : 0;
+  const afil    = rows.filter(r=>r.clasificacion==='AFIL');
+
+  const cards = [
+    {
+      icon: '✓',
+      color: 'var(--sage-bg)', border: 'var(--sage)',
+      title: 'Conciliación completada',
+      text: `${apros.length} de ${rows.length} movimientos (${tasa}%) fueron conciliados exitosamente, por un total de ${MXN2(total)}.`,
+      val: tasa + '%'
+    },
+    {
+      icon: '⏳',
+      color: 'var(--sand-bg)', border: 'var(--sand)',
+      title: 'Movimientos pendientes de revisión',
+      text: `${pends.length} registros aún requieren revisión manual. Se recomienda revisar antes del cierre.`,
+      val: pends.length.toString()
+    },
+    {
+      icon: '→',
+      color: 'var(--sky-bg)', border: 'var(--sky)',
+      title: 'Tránsitos y sin coincidencia',
+      text: `${tran.length} movimientos en tránsito o sin coincidencia detectados. Verificar con el banco si el monto es mayor a $5,000.`,
+      val: tran.length.toString()
+    },
+    {
+      icon: '💳',
+      color: 'var(--lav-bg)', border: 'var(--lav)',
+      title: 'Pagos AFIL (tarjeta)',
+      text: `${afil.length} transacciones clasificadas como AFIL. Confirmar en el estado de cuenta si coinciden con la fecha de acreditación.`,
+      val: afil.length.toString()
+    },
+  ];
+
+  document.getElementById('conclusion-grid').innerHTML = cards.map(c => `
+    <div class="conclusion-card" style="background:${c.color};border-color:${c.border}">
+      <div class="conclusion-icon">${c.icon}</div>
+      <div class="conclusion-title">${c.title}</div>
+      <div class="conclusion-val">${c.val}</div>
+      <div class="conclusion-text">${c.text}</div>
+    </div>`).join('');
+}
+
+/* ── Export PDF ──────────────────────────────────────────── */
+function exportarPDF() {
+  const desde = document.getElementById('f-desde').value;
+  const hasta = document.getElementById('f-hasta').value;
+  document.getElementById('print-titulo').textContent = 'Reporte de Conciliación Bancaria';
+  document.getElementById('print-fecha').textContent  = 'Generado: ' + new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
+  document.getElementById('print-periodo').textContent = desde && hasta ? `Periodo: ${FMT(desde)} al ${FMT(hasta)}` : '';
+  window.print();
+}
+
+/* ── Init ────────────────────────────────────────────────── */
+(async () => {
+  initFiltros();
+  const ok = await initConexion();
+  if (ok) await cargarDatos();
+})();
+</script>
+</body>
+</html>

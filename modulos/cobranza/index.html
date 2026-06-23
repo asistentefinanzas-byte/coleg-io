@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cobranza — Coleg.IO</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  /* Coleg.IO shell */
+  --bg:#f9f7f4; --surface:#fff; --surface-2:#f4f1ec;
+  --border:#e8e3db; --border-2:#d6cfc4;
+  --ink-1:#1a1814; --ink-2:#5a5650; --ink-3:#9c9690; --ink-4:#c4bfb8;
+  --sage:#c8d5c0; --sage-bg:#eef2eb;
+  --sand:#e0d4b8; --sand-bg:#f7f2e8;
+  --sky:#b8cfe0; --sky-bg:#eaf2f8;
+  --lav:#d0c8e8; --lav-bg:#f2eff8;
+  --rose:#e8c4c0; --rose-bg:#faeeed;
+  --sidebar-w:220px; --topbar-h:56px; --r:10px;
+  /* Cobranza statuses */
+  --st-sin:#8C8A80;         --st-sin-bg:#EFEEE9;
+  --st-seg:#B6791C;         --st-seg-bg:#FBF0DD;
+  --st-comp:#2E6F95;        --st-comp-bg:#E5F0F6;
+  --st-pag:#2F7D4F;         --st-pag-bg:#E5F3EA;
+  --st-sus:#B23B3B;         --st-sus-bg:#FAE7E5;
+  /* Kanban column bg */
+  --col-bg:#EFEDE6;
+}
+html,body{height:100%;background:var(--bg);color:var(--ink-1);font-family:'Inter',sans-serif;font-size:13.5px;-webkit-font-smoothing:antialiased;overflow:hidden;}
+.mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;}
+
+/* ── APP SHELL ──────────────────────────────────────────── */
+.app{display:grid;grid-template-columns:var(--sidebar-w) 1fr;grid-template-rows:var(--topbar-h) 1fr;height:100vh;}
+
+/* topbar */
+.topbar{grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:0 28px;background:var(--surface);border-bottom:1px solid var(--border);}
+.logo{font-family:'Playfair Display',serif;font-size:17px;font-weight:500;text-decoration:none;color:var(--ink-1);flex-shrink:0;}
+.logo em{font-style:normal;color:var(--ink-3);}
+.logo-sep{width:1px;height:16px;background:var(--border-2);}
+.logo-region{font-size:11px;color:var(--ink-3);}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);}
+.breadcrumb a{color:var(--ink-3);text-decoration:none;transition:color .15s;}
+.breadcrumb a:hover{color:var(--ink-1);}
+.breadcrumb span{color:var(--ink-4);}
+.topbar-search{margin-left:auto;display:flex;align-items:center;gap:7px;height:30px;padding:0 10px;background:var(--surface-2);border:1px solid var(--border);border-radius:7px;width:220px;}
+.topbar-search input{border:none;background:none;outline:none;font:inherit;font-size:12.5px;color:var(--ink-1);width:100%;}
+.topbar-search input::placeholder{color:var(--ink-4);}
+.conn-badge{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-4);margin-left:10px;flex-shrink:0;}
+.conn-dot{width:6px;height:6px;border-radius:50%;background:var(--sand);}
+.conn-dot.ok{background:var(--sage);} .conn-dot.err{background:var(--rose);}
+
+/* sidebar */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 12px;overflow-y:auto;}
+.sidebar::-webkit-scrollbar{width:0;}
+.nav-group{margin-bottom:20px;}
+.nav-group-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--ink-4);text-transform:uppercase;padding:0 10px;margin-bottom:4px;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:8px;cursor:pointer;color:var(--ink-3);text-decoration:none;transition:background .15s,color .15s;position:relative;}
+.nav-item:hover{background:var(--surface-2);color:var(--ink-2);}
+.nav-item.active{background:var(--surface-2);color:var(--ink-1);}
+.nav-item.active .nav-dot{opacity:1;}
+.nav-dot{position:absolute;left:0;top:50%;transform:translateY(-50%);width:2px;height:16px;border-radius:2px;background:var(--ink-1);opacity:0;transition:opacity .15s;}
+.nav-ico{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid transparent;}
+.nav-label{font-size:13px;font-weight:500;flex:1;}
+/* view tabs inside sidebar */
+.view-tabs{display:flex;flex-direction:column;gap:2px;margin:0 0 20px;}
+.vtab{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;font:inherit;font-size:12.5px;font-weight:500;cursor:pointer;color:var(--ink-3);background:none;border:none;text-align:left;transition:background .15s,color .15s;}
+.vtab:hover{background:var(--surface-2);color:var(--ink-2);}
+.vtab.active{background:var(--surface-2);color:var(--ink-1);}
+.vtab svg{flex-shrink:0;}
+.sidebar-sep{height:1px;background:var(--border);margin:8px 4px 14px;}
+.sidebar-footer{margin-top:auto;}
+.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;}
+.user-av{width:28px;height:28px;border-radius:7px;background:var(--lav);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#5a4e8a;flex-shrink:0;}
+.user-name{font-size:12.5px;font-weight:500;} .user-role{font-size:11px;color:var(--ink-4);}
+
+/* ── MAIN AREA ──────────────────────────────────────────── */
+.main{overflow:hidden;display:flex;flex-direction:column;background:var(--bg);}
+
+/* ── STATUS CHIPS ───────────────────────────────────────── */
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;white-space:nowrap;border:1px solid transparent;}
+.chip-dot{width:5px;height:5px;border-radius:50%;}
+.chip.SIN_CONTACTAR  {color:var(--st-sin); background:var(--st-sin-bg);}
+.chip.EN_SEGUIMIENTO {color:var(--st-seg); background:var(--st-seg-bg);}
+.chip.COMPROMISO_DE_PAGO{color:var(--st-comp);background:var(--st-comp-bg);}
+.chip.PAGADO         {color:var(--st-pag); background:var(--st-pag-bg);}
+.chip.SUSPENDIDO     {color:var(--st-sus); background:var(--st-sus-bg);}
+.chip-dot.SIN_CONTACTAR  {background:var(--st-sin);}
+.chip-dot.EN_SEGUIMIENTO {background:var(--st-seg);}
+.chip-dot.COMPROMISO_DE_PAGO{background:var(--st-comp);}
+.chip-dot.PAGADO         {background:var(--st-pag);}
+.chip-dot.SUSPENDIDO     {background:var(--st-sus);}
+
+/* ── VIEW: KANBAN ────────────────────────────────────────── */
+#view-kanban{flex:1;overflow-x:auto;overflow-y:hidden;padding:20px 24px;}
+.board{display:flex;gap:12px;height:100%;align-items:flex-start;}
+.col{background:var(--col-bg);border-radius:12px;padding:10px;width:240px;flex-shrink:0;max-height:100%;overflow-y:auto;display:flex;flex-direction:column;}
+.col::-webkit-scrollbar{width:3px;} .col::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:2px;}
+.col-head{display:flex;align-items:center;justify-content:space-between;padding:4px 4px 10px;}
+.col-title{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink-2);}
+.col-dot{width:7px;height:7px;border-radius:50%;}
+.col-count{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink-3);background:var(--surface);border-radius:99px;padding:1px 7px;}
+.col.drag-over{background:#e6e3da;outline:2px dashed var(--border-2);outline-offset:-2px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:11px 12px;margin-bottom:8px;cursor:grab;position:relative;border-left:3px solid var(--st-sin);transition:transform .1s,box-shadow .1s;}
+.card:active{cursor:grabbing;}
+.card:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.07);}
+.card.SIN_CONTACTAR  {border-left-color:var(--st-sin);}
+.card.EN_SEGUIMIENTO {border-left-color:var(--st-seg);}
+.card.COMPROMISO_DE_PAGO{border-left-color:var(--st-comp);}
+.card.PAGADO         {border-left-color:var(--st-pag);}
+.card.SUSPENDIDO     {border-left-color:var(--st-sus);}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;}
+.card-name{font-weight:600;font-size:12.5px;line-height:1.3;color:var(--ink-1);}
+.card-meta{font-size:11px;color:var(--ink-3);margin-top:1px;}
+.card-days{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;flex-shrink:0;}
+.card-days.ok{color:var(--st-pag);} .card-days.warn{color:var(--st-seg);} .card-days.bad{color:var(--st-sus);}
+.card-foot{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:9px;border-top:1px dashed var(--border);font-size:11px;color:var(--ink-3);}
+.card-amount{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;color:var(--ink-1);}
+.card-pago-badge{font-size:9.5px;font-weight:600;padding:1px 7px;border-radius:99px;background:var(--sage-bg);color:var(--sage-d,#3d7a5a);border:1px solid var(--sage);}
+
+/* ── VIEW: DASHBOARD ─────────────────────────────────────── */
+#view-dashboard{flex:1;overflow-y:auto;padding:24px 28px;}
+#view-dashboard::-webkit-scrollbar{width:3px;}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;position:relative;overflow:hidden;}
+.kpi-accent{position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0;}
+.kpi-label{font-size:10.5px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.2px;}
+.kpi-val{font-family:'Playfair Display',serif;font-size:28px;color:var(--ink-1);margin-top:8px;line-height:1;}
+.kpi-sub{font-size:11px;color:var(--ink-4);margin-top:4px;}
+.dash-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;}
+.panel-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;}
+.panel-box h3{font-family:'Playfair Display',serif;font-size:15px;font-weight:400;margin-bottom:14px;color:var(--ink-1);}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:12px;}
+.bar-lbl{width:140px;flex-shrink:0;display:flex;align-items:center;gap:6px;color:var(--ink-2);}
+.bar-track{flex:1;background:var(--surface-2);border-radius:6px;height:8px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:6px;transition:width .4s;}
+.bar-n{width:22px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-3);}
+.ranking{list-style:none;}
+.ranking li{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;}
+.ranking li:last-child{border-bottom:none;}
+.ranking .rname{font-weight:500;color:var(--ink-1);}
+.ranking .rdays{font-family:'IBM Plex Mono',monospace;color:var(--st-sus);font-weight:600;}
+
+/* ── VIEW: TABLA ─────────────────────────────────────────── */
+#view-tabla{flex:1;overflow:hidden;display:flex;flex-direction:column;padding:20px 28px 0;}
+.filter-row{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.fbtn{font-size:11.5px;padding:5px 13px;border-radius:99px;border:1px solid var(--border);background:var(--surface);color:var(--ink-3);cursor:pointer;font-family:inherit;transition:all .15s;}
+.fbtn:hover{border-color:var(--border-2);color:var(--ink-2);}
+.fbtn.active{background:var(--ink-1);color:#fff;border-color:var(--ink-1);}
+.tbl-outer{flex:1;overflow-y:auto;}
+.tbl-outer::-webkit-scrollbar{width:3px;} .tbl-outer::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:2px;}
+table{width:100%;border-collapse:collapse;}
+th{font-size:10.5px;font-weight:600;color:var(--ink-4);text-transform:uppercase;letter-spacing:.5px;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;position:sticky;top:0;background:var(--surface);}
+th:hover{color:var(--ink-2);}
+td{padding:10px 12px;font-size:12.5px;color:var(--ink-2);border-bottom:1px solid var(--border);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface-2);cursor:pointer;}
+.td-r{text-align:right;}
+
+/* ── DETAIL SLIDE-OVER ───────────────────────────────────── */
+.overlay{position:fixed;inset:0;background:rgba(20,28,24,.28);display:none;align-items:stretch;justify-content:flex-end;z-index:100;}
+.overlay.open{display:flex;}
+.slide-panel{width:420px;background:var(--surface);height:100%;overflow-y:auto;padding:26px 24px 40px;box-shadow:-6px 0 24px rgba(0,0,0,.1);}
+.slide-panel::-webkit-scrollbar{width:3px;}
+.slide-close{background:none;border:none;font:inherit;font-size:12px;color:var(--ink-3);cursor:pointer;display:flex;align-items:center;gap:5px;margin-bottom:18px;padding:0;}
+.slide-close:hover{color:var(--ink-1);}
+.slide-name{font-family:'Playfair Display',serif;font-size:21px;font-weight:400;color:var(--ink-1);}
+.slide-clave{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-3);margin-top:2px;}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0 0;}
+.field{display:flex;flex-direction:column;gap:3px;}
+.field label{font-size:10.5px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.4px;}
+.field .fv{font-size:13px;font-family:'IBM Plex Mono',monospace;color:var(--ink-1);}
+.full{grid-column:1/-1;}
+.section-lbl{font-size:10.5px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;margin:20px 0 8px;}
+select.estatus-sel{font:inherit;font-size:13px;padding:7px 9px;border-radius:7px;border:1px solid var(--border);background:var(--surface-2);width:100%;color:var(--ink-1);outline:none;}
+textarea.notes-ta{width:100%;font:inherit;font-size:12.5px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;resize:vertical;min-height:60px;background:var(--surface-2);color:var(--ink-1);outline:none;}
+textarea.notes-ta:focus{border-color:var(--border-2);}
+.log-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.log-item .when{font-family:'IBM Plex Mono',monospace;color:var(--ink-3);flex-shrink:0;width:88px;}
+.log-item .log-canal{font-weight:600;color:var(--ink-2);}
+.btn-row{display:flex;gap:8px;margin-top:18px;}
+.btn{font:inherit;font-size:12.5px;font-weight:500;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--ink-2);cursor:pointer;transition:all .15s;}
+.btn:hover{border-color:var(--border-2);color:var(--ink-1);}
+.btn-primary{background:var(--ink-1);border-color:var(--ink-1);color:#fff;}
+.btn-primary:hover{background:#2d2b27;}
+.btn-green{background:var(--sage-bg);border-color:var(--sage);color:#3d7a5a;}
+
+/* conciliacion badge en panel */
+.conc-alert{background:var(--sage-bg);border:1px solid var(--sage);border-radius:8px;padding:10px 14px;margin:14px 0;font-size:12px;color:#2d5e42;display:flex;align-items:flex-start;gap:8px;}
+.conc-alert svg{flex-shrink:0;margin-top:1px;}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay">
+  <div class="slide-panel" id="slidePanel"></div>
+</div>
+
+<div class="app">
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <a href="../../index.html" class="logo">Coleg<em>.IO</em></a>
+  <div class="logo-sep"></div>
+  <span class="logo-region">Yucatán</span>
+  <div class="breadcrumb">
+    <span>›</span><a href="../../index.html">Inicio</a>
+    <span>›</span><span style="color:var(--ink-2)">Cobranza</span>
+  </div>
+  <div class="topbar-search">
+    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="var(--ink-4)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="searchInput" placeholder="Buscar alumno o clave…" oninput="onSearch()">
+  </div>
+  <div class="conn-badge">
+    <div class="conn-dot" id="connDot"></div>
+    <span id="connLabel">Conectando…</span>
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="nav-group">
+    <a class="nav-item" href="../../index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--surface-2);border-color:var(--border)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="var(--ink-2)" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <span class="nav-label">Inicio</span>
+    </a>
+    <a class="nav-item" href="../conciliacion/index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--sky-bg);border-color:var(--sky)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#3a7ab0" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      </div>
+      <span class="nav-label">Conciliación</span>
+    </a>
+    <a class="nav-item" href="../reportes/index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--lav-bg);border-color:var(--lav)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#5a4e8a" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <span class="nav-label">Reportes</span>
+    </a>
+  </div>
+
+  <div class="sidebar-sep"></div>
+  <div class="nav-group-label" style="padding:0 10px;margin-bottom:6px">Vista</div>
+  <div class="view-tabs">
+    <button class="vtab active" data-view="kanban" onclick="switchView('kanban',this)">
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="11" rx="1"/><rect x="14" y="17" width="7" height="4" rx="1"/></svg>
+      Tablero Kanban
+    </button>
+    <button class="vtab" data-view="dashboard" onclick="switchView('dashboard',this)">
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Resumen
+    </button>
+    <button class="vtab" data-view="tabla" onclick="switchView('tabla',this)">
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      Tabla completa
+    </button>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-sep"></div>
+    <div class="user-row">
+      <div class="user-av">AR</div>
+      <div><div class="user-name">Administrador</div><div class="user-role">Super admin</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- VIEWS -->
+<div id="view-kanban" style="display:flex;flex-direction:column;overflow:hidden;">
+  <!-- board rendered here -->
+</div>
+<div id="view-dashboard" style="display:none;flex:1;overflow-y:auto;padding:24px 28px;"></div>
+<div id="view-tabla" style="display:none;flex:1;overflow:hidden;display:none;flex-direction:column;padding:20px 28px 0;"></div>
+
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   CONFIG & SUPABASE
+   ══════════════════════════════════════════════════════════ */
+const SUPABASE_URL      = 'https://kqbeoymmpbnhgwyhtfiq.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxYmVveW1tcGJuaGd3eWh0ZmlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMjU1MjIsImV4cCI6MjA5NzgwMTUyMn0.dJory8gvUyWce_7ICn3LVcWW0R-iJtXS8YmJvPjzEtY';
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ── Constantes ──────────────────────────────────────────── */
+const ESTADOS = ['SIN_CONTACTAR','EN_SEGUIMIENTO','COMPROMISO_DE_PAGO','PAGADO','SUSPENDIDO'];
+const ESTADO_LABEL = { SIN_CONTACTAR:'Sin contactar', EN_SEGUIMIENTO:'En seguimiento', COMPROMISO_DE_PAGO:'Compromiso de pago', PAGADO:'Pagado', SUSPENDIDO:'Suspendido' };
+const COL_DOT_COLOR = { SIN_CONTACTAR:'#8C8A80', EN_SEGUIMIENTO:'#B6791C', COMPROMISO_DE_PAGO:'#2E6F95', PAGADO:'#2F7D4F', SUSPENDIDO:'#B23B3B' };
+const CANAL_OPS = ['Llamada','WhatsApp','Correo','Presencial','Otro'];
+
+/* ── Helpers ─────────────────────────────────────────────── */
+const MXN  = n => '$' + (n||0).toLocaleString('es-MX');
+const FMTD = d => d ? new Date(d+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short'}) : '—';
+const TODAY = () => new Date().toISOString().slice(0,10);
+const diaClass = d => d<=5?'ok':d<=20?'warn':'bad';
+
+/* ── Estado global ───────────────────────────────────────── */
+let alumnos     = [];  // data cobranza
+let pagosMapa   = {};  // clave_alumno → [pagos aprobados en conciliacion]
+let searchTerm  = '';
+let activeFilter= 'ALL';
+let sortKey     = 'dias_atraso', sortDir = -1;
+let activeView  = 'kanban';
+let supabaseOk  = false;
+
+/* ══════════════════════════════════════════════════════════
+   DATOS DE DEMO (se usan si la tabla cobranza no existe aún)
+   ══════════════════════════════════════════════════════════ */
+const DEMO = [
+  {id:'d1',clave_alumno:'CY-0142',nombre:'María Fernanda Couoh Pat',nivel:'Primaria',grado_grupo:'4°A',periodo_cargo:'Abr–May',dias_atraso:42,telefono:'999 123 4501',total_adeudado:5400,cantidad_meses:2,estatus:'SUSPENDIDO',compromiso:false,fecha_para_pago:null,suspension:true,fecha_suspension:'2026-06-05',comentarios:'No contesta llamadas. Se envió oficio.',ultima_fecha_contacto:'2026-06-02',responsable:'Ana López',intentos:[{fecha:'2026-05-20',canal:'Llamada',nota:'No contestó'},{fecha:'2026-06-02',canal:'WhatsApp',nota:'Mensaje entregado, sin respuesta'}]},
+  {id:'d2',clave_alumno:'CY-0098',nombre:'Jorge Alberto Pech Cetina',nivel:'Secundaria',grado_grupo:'2°B',periodo_cargo:'Jun',dias_atraso:9,telefono:'999 234 0912',total_adeudado:2700,cantidad_meses:1,estatus:'COMPROMISO_DE_PAGO',compromiso:true,fecha_para_pago:'2026-06-25',suspension:false,fecha_suspension:null,comentarios:'Tutor promete pago al recibir quincena.',ultima_fecha_contacto:'2026-06-15',responsable:'Ana López',intentos:[{fecha:'2026-06-15',canal:'Llamada',nota:'Tutor se compromete a pagar el 25'}]},
+  {id:'d3',clave_alumno:'CY-0211',nombre:'Renata Itzel Dzul Chan',nivel:'Preescolar',grado_grupo:'3°Único',periodo_cargo:'May–Jun',dias_atraso:28,telefono:'999 345 7732',total_adeudado:3600,cantidad_meses:2,estatus:'EN_SEGUIMIENTO',compromiso:false,fecha_para_pago:null,suspension:false,fecha_suspension:null,comentarios:'',ultima_fecha_contacto:'2026-06-10',responsable:'Carlos Vega',intentos:[{fecha:'2026-06-10',canal:'WhatsApp',nota:'Dice que pagará la próxima semana'}]},
+  {id:'d4',clave_alumno:'CY-0303',nombre:'Diego Emiliano Uc Canul',nivel:'Prepa',grado_grupo:'1°C',periodo_cargo:'Jun',dias_atraso:3,telefono:'999 456 1290',total_adeudado:3100,cantidad_meses:1,estatus:'SIN_CONTACTAR',compromiso:false,fecha_para_pago:null,suspension:false,fecha_suspension:null,comentarios:'',ultima_fecha_contacto:null,responsable:'—',intentos:[]},
+  {id:'d5',clave_alumno:'CY-0077',nombre:'Camila Sofía Tun Yam',nivel:'Primaria',grado_grupo:'6°B',periodo_cargo:'Jun',dias_atraso:1,telefono:'999 567 8821',total_adeudado:1800,cantidad_meses:1,estatus:'PAGADO',compromiso:false,fecha_para_pago:null,suspension:false,fecha_suspension:null,comentarios:'Pago confirmado.',ultima_fecha_contacto:'2026-06-18',responsable:'Carlos Vega',intentos:[]},
+  {id:'d6',clave_alumno:'CY-0150',nombre:'Sebastián Caamal Rejón',nivel:'Secundaria',grado_grupo:'3°A',periodo_cargo:'Abr–Jun',dias_atraso:61,telefono:'999 678 3345',total_adeudado:8100,cantidad_meses:3,estatus:'SUSPENDIDO',compromiso:false,fecha_para_pago:null,suspension:true,fecha_suspension:'2026-05-28',comentarios:'Tres meses sin pago.',ultima_fecha_contacto:'2026-05-25',responsable:'Ana López',intentos:[{fecha:'2026-05-25',canal:'Llamada',nota:'Número fuera de servicio'}]},
+  {id:'d7',clave_alumno:'CY-0265',nombre:'Valentina Briceño Ek',nivel:'Primaria',grado_grupo:'2°A',periodo_cargo:'Jun',dias_atraso:6,telefono:'999 789 4456',total_adeudado:1800,cantidad_meses:1,estatus:'EN_SEGUIMIENTO',compromiso:false,fecha_para_pago:null,suspension:false,fecha_suspension:null,comentarios:'',ultima_fecha_contacto:'2026-06-14',responsable:'Carlos Vega',intentos:[{fecha:'2026-06-14',canal:'Llamada',nota:'Pide unos días más'}]},
+  {id:'d8',clave_alumno:'CY-0188',nombre:'Mateo Alejandro Chi Poot',nivel:'Prepa',grado_grupo:'3°A',periodo_cargo:'May–Jun',dias_atraso:19,telefono:'999 890 2287',total_adeudado:6200,cantidad_meses:2,estatus:'COMPROMISO_DE_PAGO',compromiso:true,fecha_para_pago:'2026-06-22',suspension:false,fecha_suspension:null,comentarios:'Pagará en dos partes.',ultima_fecha_contacto:'2026-06-16',responsable:'Ana López',intentos:[{fecha:'2026-06-16',canal:'Llamada',nota:'Acuerda pago en dos partes'}]},
+  {id:'d9',clave_alumno:'CY-0044',nombre:'Ximena Abigail Moo Balam',nivel:'Secundaria',grado_grupo:'1°B',periodo_cargo:'Jun',dias_atraso:4,telefono:'999 901 5567',total_adeudado:2700,cantidad_meses:1,estatus:'SIN_CONTACTAR',compromiso:false,fecha_para_pago:null,suspension:false,fecha_suspension:null,comentarios:'',ultima_fecha_contacto:null,responsable:'—',intentos:[]},
+  {id:'d10',clave_alumno:'CY-0319',nombre:'Emiliano Cauich Pacheco',nivel:'Primaria',grado_grupo:'5°C',periodo_cargo:'Jun',dias_atraso:2,telefono:'999 012 6678',total_adeudado:1800,cantidad_meses:1,estatus:'PAGADO',compromiso:false,fecha_para_pago:null,suspension:false,fecha_suspension:null,comentarios:'Conciliado HSBC.',ultima_fecha_contacto:'2026-06-19',responsable:'Carlos Vega',intentos:[]},
+];
+
+/* ══════════════════════════════════════════════════════════
+   INIT
+   ══════════════════════════════════════════════════════════ */
+async function init() {
+  // Conexión
+  try {
+    const { error } = await db.from('conciliaciones').select('id').limit(1);
+    supabaseOk = !error;
+  } catch { supabaseOk = false; }
+  document.getElementById('connDot').className   = `conn-dot ${supabaseOk?'ok':'err'}`;
+  document.getElementById('connLabel').textContent = supabaseOk ? 'Conectado' : 'Sin conexión';
+
+  // Intentar cargar tabla cobranza
+  if (supabaseOk) {
+    const { data, error } = await db.from('cobranza').select('*, cobranza_contactos(*)').order('dias_atraso', { ascending: false });
+    if (!error && data && data.length > 0) {
+      alumnos = data.map(r => ({
+        ...r,
+        intentos: (r.cobranza_contactos || []).sort((a,b)=>a.fecha>b.fecha?1:-1),
+      }));
+    } else {
+      alumnos = DEMO; // fallback demo
+    }
+    // Cruzar con conciliaciones
+    await cruzarConciliaciones();
+  } else {
+    alumnos = DEMO;
+  }
+
+  render();
+}
+
+/* ── Cruce con conciliaciones ────────────────────────────── */
+async function cruzarConciliaciones() {
+  try {
+    const { data } = await db.from('conciliaciones')
+      .select('clave_alumno,monto_banco,concepto,fecha,periodo,folio')
+      .eq('estatus','APROBADO')
+      .not('clave_alumno','is',null);
+    if (!data) return;
+    pagosMapa = {};
+    data.forEach(r => {
+      if (!pagosMapa[r.clave_alumno]) pagosMapa[r.clave_alumno] = [];
+      pagosMapa[r.clave_alumno].push(r);
+    });
+    // Marcar automáticamente como PAGADO si hay pago conciliado
+    alumnos.forEach(a => {
+      if (pagosMapa[a.clave_alumno]?.length && a.estatus !== 'PAGADO') {
+        a._pago_conciliado = true;
+      }
+    });
+  } catch {}
+}
+
+/* ══════════════════════════════════════════════════════════
+   VIEW SWITCH
+   ══════════════════════════════════════════════════════════ */
+function switchView(view, btn) {
+  activeView = view;
+  document.querySelectorAll('.vtab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#view-kanban,#view-dashboard,#view-tabla').forEach(v => v.style.display = 'none');
+  document.getElementById('view-'+view).style.display = view === 'tabla' ? 'flex' : (view === 'kanban' ? 'flex' : 'block');
+  document.getElementById('view-'+view).style.flexDirection = 'column';
+  render();
+}
+
+function onSearch() {
+  searchTerm = document.getElementById('searchInput').value.toLowerCase();
+  render();
+}
+
+function getFiltered() {
+  return alumnos.filter(a => {
+    const matchSearch = !searchTerm || a.nombre?.toLowerCase().includes(searchTerm) || a.clave_alumno?.toLowerCase().includes(searchTerm);
+    const matchFilter = activeFilter === 'ALL' || a.estatus === activeFilter;
+    return matchSearch && matchFilter;
+  });
+}
+
+function render() {
+  if (activeView === 'kanban')    renderKanban();
+  if (activeView === 'dashboard') renderDashboard();
+  if (activeView === 'tabla')     renderTabla();
+}
+
+/* ══════════════════════════════════════════════════════════
+   KANBAN
+   ══════════════════════════════════════════════════════════ */
+function renderKanban() {
+  const root = document.getElementById('view-kanban');
+  root.innerHTML = '<div class="board" id="board"></div>';
+  const board = document.getElementById('board');
+  const data  = getFiltered();
+
+  ESTADOS.forEach(estado => {
+    const items = data.filter(a => a.estatus === estado).sort((a,b) => b.dias_atraso - a.dias_atraso);
+    const col = document.createElement('div');
+    col.className = 'col';
+    col.dataset.estado = estado;
+    col.innerHTML = `<div class="col-head">
+      <div class="col-title"><div class="col-dot" style="background:${COL_DOT_COLOR[estado]}"></div>${ESTADO_LABEL[estado]}</div>
+      <div class="col-count">${items.length}</div>
+    </div>`;
+
+    items.forEach(a => {
+      const card = document.createElement('div');
+      card.className = `card ${estado}`;
+      card.draggable = true;
+      card.dataset.id = a.id;
+      const tieneConc = pagosMapa[a.clave_alumno]?.length;
+      card.innerHTML = `
+        <div class="card-top">
+          <div style="flex:1;min-width:0">
+            <div class="card-name">${a.nombre}</div>
+            <div class="card-meta">${a.clave_alumno} · ${a.nivel} ${a.grado_grupo||''}</div>
+          </div>
+          <div class="card-days ${diaClass(a.dias_atraso)}">${a.dias_atraso}d</div>
+        </div>
+        <div class="card-foot">
+          <span class="card-amount">${MXN(a.total_adeudado)}</span>
+          ${tieneConc ? '<span class="card-pago-badge">✓ Pago en conc.</span>' : `<span>${a.ultima_fecha_contacto ? 'Últ. '+FMTD(a.ultima_fecha_contacto) : 'Sin contacto'}</span>`}
+        </div>`;
+
+      card.addEventListener('click', () => openDetail(a.id));
+      card.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('text/plain', a.id);
+        setTimeout(() => card.style.opacity = '.4', 0);
+      });
+      card.addEventListener('dragend', () => card.style.opacity = '1');
+      col.appendChild(card);
+    });
+
+    col.addEventListener('dragover',  e => { e.preventDefault(); col.classList.add('drag-over'); });
+    col.addEventListener('dragleave', ()=> col.classList.remove('drag-over'));
+    col.addEventListener('drop', async e => {
+      e.preventDefault();
+      col.classList.remove('drag-over');
+      const rawId = e.dataTransfer.getData('text/plain');
+      const a = alumnos.find(x => String(x.id) === rawId);
+      if (a && a.estatus !== estado) {
+        await cambiarEstatus(a, estado);
+      }
+    });
+
+    board.appendChild(col);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   DASHBOARD
+   ══════════════════════════════════════════════════════════ */
+function renderDashboard() {
+  const root = document.getElementById('view-dashboard');
+  const data = getFiltered();
+  const activos = data.filter(a => a.estatus !== 'PAGADO');
+  const totalAdeudado = activos.reduce((s,a) => s + (a.total_adeudado||0), 0);
+  const promedioAtraso = activos.length ? Math.round(activos.reduce((s,a) => s+a.dias_atraso,0)/activos.length) : 0;
+  const sinContactar   = data.filter(a => a.estatus === 'SIN_CONTACTAR').length;
+  const conConc = Object.keys(pagosMapa).filter(k => alumnos.find(a=>a.clave_alumno===k && a.estatus!=='PAGADO')).length;
+
+  const max = Math.max(...ESTADOS.map(e=>data.filter(a=>a.estatus===e).length),1);
+  const top6 = activos.slice().sort((a,b)=>b.dias_atraso-a.dias_atraso).slice(0,6);
+
+  root.innerHTML = `
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-accent" style="background:var(--rose)"></div><div class="kpi-label">Total adeudado activo</div><div class="kpi-val">${MXN(totalAdeudado)}</div><div class="kpi-sub">${activos.length} alumnos</div></div>
+      <div class="kpi"><div class="kpi-accent" style="background:var(--sand)"></div><div class="kpi-label">Promedio días de atraso</div><div class="kpi-val">${promedioAtraso}</div><div class="kpi-sub">días</div></div>
+      <div class="kpi"><div class="kpi-accent" style="background:var(--sky)"></div><div class="kpi-label">Sin contactar</div><div class="kpi-val" style="color:var(--st-sin)">${sinContactar}</div><div class="kpi-sub">pendientes de iniciar</div></div>
+      <div class="kpi"><div class="kpi-accent" style="background:var(--sage)"></div><div class="kpi-label">Pago en conciliación</div><div class="kpi-val" style="color:#3d7a5a">${conConc}</div><div class="kpi-sub">detectados automáticamente</div></div>
+    </div>
+    <div class="dash-grid">
+      <div class="panel-box">
+        <h3>Distribución por estatus</h3>
+        ${ESTADOS.map(e=>{const n=data.filter(a=>a.estatus===e).length; return `
+          <div class="bar-row">
+            <div class="bar-lbl"><div class="col-dot" style="background:${COL_DOT_COLOR[e]};width:7px;height:7px;border-radius:50%;flex-shrink:0"></div>${ESTADO_LABEL[e]}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${(n/max)*100}%;background:${COL_DOT_COLOR[e]}"></div></div>
+            <div class="bar-n">${n}</div>
+          </div>`}).join('')}
+      </div>
+      <div class="panel-box">
+        <h3>Mayor atraso</h3>
+        <ul class="ranking">
+          ${top6.map(a=>`<li><span class="rname">${a.nombre}</span><span class="rdays">${a.dias_atraso}d</span></li>`).join('')}
+        </ul>
+      </div>
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════════════════
+   TABLA
+   ══════════════════════════════════════════════════════════ */
+function renderTabla() {
+  const root = document.getElementById('view-tabla');
+  root.innerHTML = '';
+
+  // Filtros
+  const fr = document.createElement('div');
+  fr.className = 'filter-row';
+  [['ALL','Todos'], ...ESTADOS.map(e=>[e,ESTADO_LABEL[e]])].forEach(([v,l])=>{
+    const b = document.createElement('button');
+    b.className = 'fbtn' + (activeFilter===v?' active':'');
+    b.textContent = l;
+    b.onclick = () => { activeFilter = v; renderTabla(); };
+    fr.appendChild(b);
+  });
+  root.appendChild(fr);
+
+  let data = getFiltered();
+  if (activeFilter !== 'ALL') data = data.filter(a => a.estatus === activeFilter);
+  data = data.slice().sort((a,b) => sortDir * ((a[sortKey]>b[sortKey])?1:(a[sortKey]<b[sortKey]?-1:0)));
+
+  const cols = [
+    ['nombre','Alumno'],['clave_alumno','Clave'],['nivel','Nivel'],
+    ['grado_grupo','Grado'],['total_adeudado','Adeudo'],
+    ['dias_atraso','Atraso'],['estatus','Estatus'],['ultima_fecha_contacto','Últ. contacto']
+  ];
+
+  const outer = document.createElement('div');
+  outer.className = 'tbl-outer';
+  outer.innerHTML = `<table>
+    <thead><tr>${cols.map(([k,l])=>`<th data-key="${k}">${l}${sortKey===k?(sortDir===1?' ↑':' ↓'):''}</th>`).join('')}</tr></thead>
+    <tbody>${data.length ? data.map(a=>`<tr data-id="${a.id}">
+      <td>${a.nombre}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-3)">${a.clave_alumno}</td>
+      <td>${a.nivel}</td>
+      <td>${a.grado_grupo||'—'}</td>
+      <td class="td-r" style="font-family:'IBM Plex Mono',monospace">${MXN(a.total_adeudado)}</td>
+      <td class="td-r" style="font-family:'IBM Plex Mono',monospace">${a.dias_atraso}d</td>
+      <td><span class="chip ${a.estatus}"><span class="chip-dot ${a.estatus}"></span>${ESTADO_LABEL[a.estatus]}</span></td>
+      <td>${FMTD(a.ultima_fecha_contacto)}</td>
+    </tr>`).join('') : '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--ink-4)">Sin resultados</td></tr>'}</tbody>
+  </table>`;
+  root.appendChild(outer);
+
+  outer.querySelectorAll('thead th').forEach(th => {
+    th.addEventListener('click', () => {
+      const k = th.dataset.key;
+      if (sortKey===k) sortDir*=-1; else { sortKey=k; sortDir=1; }
+      renderTabla();
+    });
+  });
+  outer.querySelectorAll('tbody tr[data-id]').forEach(tr => {
+    tr.addEventListener('click', () => openDetail(tr.dataset.id));
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   DETAIL PANEL
+   ══════════════════════════════════════════════════════════ */
+function openDetail(id) {
+  const a = alumnos.find(x => String(x.id) === String(id));
+  if (!a) return;
+  const overlay = document.getElementById('overlay');
+  const panel   = document.getElementById('slidePanel');
+  const pagosConc = pagosMapa[a.clave_alumno] || [];
+
+  panel.innerHTML = `
+    <button class="slide-close" onclick="document.getElementById('overlay').classList.remove('open')">
+      ← Cerrar
+    </button>
+    <div class="slide-name">${a.nombre}</div>
+    <div class="slide-clave">${a.clave_alumno} · ${a.nivel} ${a.grado_grupo||''}</div>
+
+    ${pagosConc.length ? `
+    <div class="conc-alert">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <div>
+        <strong>Pago detectado en conciliación</strong><br>
+        ${pagosConc.map(p=>`${FMTD(p.fecha)} — ${MXN(p.monto_banco)} (${p.concepto||'Sin concepto'})`).join('<br>')}
+        <br><button class="btn btn-green" style="margin-top:8px;padding:5px 12px;font-size:11.5px" onclick="marcarPagado('${a.id}')">Marcar como Pagado</button>
+      </div>
+    </div>` : ''}
+
+    <div class="field-grid">
+      <div class="field"><label>Periodo del cargo</label><div class="fv">${a.periodo_cargo||'—'}</div></div>
+      <div class="field"><label>Meses acumulados</label><div class="fv">${a.cantidad_meses||1}</div></div>
+      <div class="field"><label>Total adeudado</label><div class="fv">${MXN(a.total_adeudado)}</div></div>
+      <div class="field"><label>Días de atraso</label><div class="fv">${a.dias_atraso}</div></div>
+      <div class="field"><label>Teléfono</label><div class="fv">${a.telefono||'—'}</div></div>
+      <div class="field"><label>Responsable</label><div class="fv">${a.responsable||'—'}</div></div>
+      <div class="field"><label>Compromiso de pago</label><div class="fv">${a.compromiso ? 'Sí · '+FMTD(a.fecha_para_pago) : 'No registrado'}</div></div>
+      <div class="field"><label>Suspensión</label><div class="fv">${a.suspension ? 'Sí, desde '+FMTD(a.fecha_suspension) : 'No'}</div></div>
+    </div>
+
+    <div class="section-lbl">Estatus</div>
+    <select class="estatus-sel" id="sel-estatus">
+      ${ESTADOS.map(e=>`<option value="${e}" ${e===a.estatus?'selected':''}>${ESTADO_LABEL[e]}</option>`).join('')}
+    </select>
+
+    <div class="section-lbl">Comentarios</div>
+    <textarea class="notes-ta" id="inp-notas">${a.comentarios||''}</textarea>
+
+    <div class="section-lbl">Registrar contacto</div>
+    <div style="display:flex;gap:8px;margin-bottom:6px">
+      <select class="estatus-sel" id="sel-canal" style="flex:1">${CANAL_OPS.map(c=>`<option>${c}</option>`).join('')}</select>
+      <input id="inp-nota-contacto" type="text" placeholder="Nota del contacto" style="flex:2;height:36px;padding:0 10px;border-radius:7px;border:1px solid var(--border);font:inherit;font-size:12.5px;background:var(--surface-2);outline:none;color:var(--ink-1)">
+    </div>
+
+    <div class="section-lbl">Historial (${(a.intentos||[]).length})</div>
+    <div>
+      ${(a.intentos||[]).length ? [...(a.intentos||[])].reverse().map(i=>`
+        <div class="log-item">
+          <div class="when">${FMTD(i.fecha)}</div>
+          <div><span class="log-canal">${i.canal}</span> — ${i.nota}</div>
+        </div>`).join('') : '<div style="font-size:12px;color:var(--ink-4);padding:8px 0">Sin intentos registrados.</div>'}
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="guardarContacto('${a.id}')">Registrar contacto</button>
+      <button class="btn" onclick="guardarCambios('${a.id}')">Guardar cambios</button>
+    </div>`;
+
+  overlay.classList.add('open');
+  overlay.onclick = e => { if (e.target===overlay) overlay.classList.remove('open'); };
+}
+
+/* ── Acciones ────────────────────────────────────────────── */
+async function cambiarEstatus(a, nuevoEstatus) {
+  a.estatus = nuevoEstatus;
+  if (nuevoEstatus === 'SUSPENDIDO') { a.suspension = true; a.fecha_suspension = TODAY(); }
+  if (supabaseOk && !String(a.id).startsWith('d')) {
+    await db.from('cobranza').update({ estatus: nuevoEstatus, updated_at: new Date().toISOString() }).eq('id', a.id);
+  }
+  render();
+}
+
+async function guardarCambios(id) {
+  const a = alumnos.find(x => String(x.id) === id);
+  if (!a) return;
+  const estatus   = document.getElementById('sel-estatus').value;
+  const comentarios = document.getElementById('inp-notas').value;
+  a.estatus = estatus;
+  a.comentarios = comentarios;
+  if (supabaseOk && !id.startsWith('d')) {
+    await db.from('cobranza').update({ estatus, comentarios, updated_at: new Date().toISOString() }).eq('id', id);
+  }
+  document.getElementById('overlay').classList.remove('open');
+  render();
+}
+
+async function guardarContacto(id) {
+  const a = alumnos.find(x => String(x.id) === id);
+  if (!a) return;
+  const canal = document.getElementById('sel-canal').value;
+  const nota  = document.getElementById('inp-nota-contacto').value.trim();
+  if (!nota) return;
+  const nuevo = { fecha: TODAY(), canal, nota };
+  if (!a.intentos) a.intentos = [];
+  a.intentos.push(nuevo);
+  a.ultima_fecha_contacto = TODAY();
+  if (supabaseOk && !id.startsWith('d')) {
+    await db.from('cobranza_contactos').insert({ cobranza_id: id, ...nuevo, created_at: new Date().toISOString() });
+    await db.from('cobranza').update({ ultima_fecha_contacto: TODAY(), updated_at: new Date().toISOString() }).eq('id', id);
+  }
+  openDetail(id);
+}
+
+async function marcarPagado(id) {
+  const a = alumnos.find(x => String(x.id) === id);
+  if (!a) return;
+  await cambiarEstatus(a, 'PAGADO');
+  document.getElementById('overlay').classList.remove('open');
+}
+
+/* ── Boot ────────────────────────────────────────────────── */
+init();
+</script>
+</body>
+</html>
