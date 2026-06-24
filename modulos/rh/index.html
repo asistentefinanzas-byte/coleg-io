@@ -932,10 +932,43 @@ function toast(msg){
   t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);
 }
 function imprimirContrato(){
+  const page=document.getElementById('contractPage');
+  const sig=page.querySelector('.c-signature');
+
+  // Resetear margen previo
+  sig.style.marginTop='';
+
+  // Altura de la zona imprimible en A4:
+  // 297mm hoja - 18mm margen sup - 22mm margen inf = 257mm
+  // 1mm = 96/25.4 px en CSS
+  const mmPx=96/25.4;
+  const pageH=Math.round(257*mmPx); // ~971px por página
+
+  // Medimos el contenido SIN la firma
+  const totalH=page.scrollHeight;
+  const sigH=sig.offsetHeight;
+  const contentH=totalH-sigH;
+
+  // Cuánto de la última página está ocupado por el contenido
+  const usedOnLastPage=contentH%pageH||pageH;
+  // Espacio libre restante en esa página
+  const libre=pageH-usedOnLastPage;
+
+  // Si caben las firmas en esa página, las empujamos al fondo
+  if(libre>=sigH+10){
+    sig.style.marginTop=(libre-sigH)+'px';
+  }
+  // Si no caben, van a la siguiente página (comportamiento natural)
+
   const titulo=document.title;
   document.title='';
-  window.print();
-  setTimeout(()=>{ document.title=titulo; },1000);
+  requestAnimationFrame(()=>{
+    window.print();
+    setTimeout(()=>{
+      document.title=titulo;
+      sig.style.marginTop='';
+    },2000);
+  });
 }
 
 // ── CONTRACT RENDER ──
