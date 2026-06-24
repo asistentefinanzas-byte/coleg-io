@@ -178,6 +178,32 @@ tr:hover .row-actions { opacity: 1; }
 .toast.show { opacity: 1; transform: translateY(0); }
 .toast-ok  { background: var(--sage-bg);  border: 1px solid var(--sage);  color: #3d7a5a; }
 .toast-err { background: var(--rose-bg); border: 1px solid var(--rose); color: #9a3a3a; }
+
+.menu-btn{display:none;width:34px;height:34px;background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;align-items:center;justify-content:center;color:var(--ink-2);flex-shrink:0;}
+.sidebar-backdrop{display:none;position:fixed;inset:0;z-index:40;background:rgba(26,24,20,.45);}
+.sidebar-backdrop.show{display:block;}
+
+@media(max-width:768px){
+  html,body{overflow:auto;}
+  .app{grid-template-columns:1fr;grid-template-rows:var(--topbar-h) 1fr;height:auto;min-height:100vh;}
+  .menu-btn{display:flex;}
+  .topbar{padding:0 14px;gap:8px;}
+  .logo-sep,.logo-region,.breadcrumb{display:none;}
+  .topbar-right,.topbar-r{gap:6px;}
+  .conn-badge span{display:none;}
+  .sidebar{position:fixed;left:-260px;top:0;bottom:0;width:240px;z-index:50;transition:left .25s cubic-bezier(.4,0,.2,1);padding-top:calc(var(--topbar-h) + 12px);}
+  .sidebar.open{left:0;box-shadow:4px 0 24px rgba(0,0,0,.18);}
+  .main{overflow-y:auto;height:calc(100vh - var(--topbar-h));padding:16px 12px;}
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .filters-row{flex-wrap:wrap;gap:8px;}
+  .filters-row input,.filters-row select{min-width:0;flex:1 1 140px;}
+  .kpi-row{grid-template-columns:1fr 1fr!important;}
+  .panel-hd{flex-wrap:wrap;gap:8px;}
+}
+@media(max-width:480px){
+  .kpi-row{grid-template-columns:1fr!important;}
+  .topbar-search{width:auto;flex:1;}
+}
 </style>
 </head>
 <body>
@@ -219,6 +245,9 @@ tr:hover .row-actions { opacity: 1; }
 
 <!-- TOPBAR -->
 <header class="topbar">
+  <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menú">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
   <a href="../../index.html" class="logo">Coleg<em>.IO</em></a>
   <div class="logo-sep"></div>
   <span class="logo-region">Yucatán</span>
@@ -374,7 +403,7 @@ tr:hover .row-actions { opacity: 1; }
       <span class="panel-title">Movimientos</span>
       <span class="panel-count" id="panel-count">—</span>
     </div>
-    <div class="tbl-wrap">
+    <div class="tbl-wrap table-scroll">
       <table>
         <thead>
           <tr>
@@ -633,6 +662,19 @@ document.getElementById('overlay').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
 });
 
+// ── Sidebar móvil ─────────────────────────────
+function toggleSidebar(){
+  document.querySelector('.sidebar').classList.toggle('open');
+  document.getElementById('sidebarBackdrop').classList.toggle('show');
+}
+function closeSidebar(){
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebarBackdrop').classList.remove('show');
+}
+document.querySelectorAll('.nav-item').forEach(el=>{
+  el.addEventListener('click',()=>{ if(window.innerWidth<=768) closeSidebar(); });
+});
+
 // ── Init ──────────────────────────────────────
 (async () => {
   const ok = await initConexion();
@@ -641,5 +683,6 @@ document.getElementById('overlay').addEventListener('click', e => {
     '<tr><td colspan="10" class="state-msg">Sin conexión a Supabase.</td></tr>';
 })();
 </script>
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
 </body>
 </html>
