@@ -173,19 +173,28 @@ html,body{height:100%;background:var(--bg);color:var(--ink-1);font-family:'Inter
 .tog-sw::after{content:'';position:absolute;width:13px;height:13px;background:#fff;border-radius:50%;top:2px;left:2px;transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.2);}
 .tog-sw.on::after{left:17px;}
 .contract-body{flex:1;overflow-y:auto;padding:28px 40px;background:#ECEAE4;}
-.contract-page{background:#fff;max-width:720px;margin:0 auto;padding:36px 46px;box-shadow:0 2px 16px rgba(0,0,0,.1);min-height:1050px;display:flex;flex-direction:column;}
+/* Simulación de páginas A4 en preview */
+.contract-page{
+  background:#fff;
+  width:210mm;
+  min-height:297mm;
+  margin:0 auto 20px;
+  padding:20mm 22mm 20mm;
+  box-shadow:0 2px 16px rgba(0,0,0,.15);
+  box-sizing:border-box;
+  column-count:1;
+  position:relative;
+}
 .contract-page.edit-mode [contenteditable]{outline:1px dashed #93C5FD;border-radius:2px;background:rgba(219,234,254,.15);}
 .contract-page.edit-mode [contenteditable]:focus{outline:2px solid #3B82F6;background:rgba(219,234,254,.3);}
-.c-no{font-size:8.5pt;text-align:right;margin-bottom:6px;color:#888;}
-.c-header{text-align:center;margin-bottom:12px;}
-.c-title{font-size:13pt;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
-.c-subtitle{font-size:9pt;color:#666;margin-top:3px;}
-.c-body{font-size:9pt;line-height:1.55;color:#111;flex:1;}
-.c-body p{margin-bottom:6px;text-align:justify;}
-.c-body .c-section{font-weight:700;margin-top:10px;margin-bottom:3px;text-transform:uppercase;font-size:8.5pt;}
-.c-signature{margin-top:auto;padding-top:12px;border-top:1px solid #ddd;display:flex;justify-content:space-between;align-items:flex-end;flex-shrink:0;}
+.c-header{text-align:center;margin-bottom:14px;}
+.c-title{font-size:12pt;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+.c-body{font-size:9pt;line-height:1.55;color:#111;}
+.c-body p{margin-bottom:7px;text-align:justify;}
+.c-body .c-section{font-weight:700;margin-top:12px;margin-bottom:4px;text-transform:uppercase;font-size:8.5pt;page-break-after:avoid;}
+.c-signature{margin-top:20mm;display:flex;justify-content:space-between;align-items:flex-end;page-break-inside:avoid;}
 .c-sign-block{text-align:center;flex:1;}
-.c-sign-line{border-top:1px solid #111;width:170px;margin:0 auto 3px;}
+.c-sign-line{border-top:1px solid #111;width:170px;margin:0 auto 4px;}
 .c-sign-name{font-size:8pt;font-weight:600;text-transform:uppercase;}
 .c-sign-role{font-size:7.5pt;color:#666;}
 
@@ -199,12 +208,20 @@ html,body{height:100%;background:var(--bg);color:var(--ink-1);font-family:'Inter
 /* PRINT */
 @media print{
   .topbar,.sidebar,.list-panel,.rp-tabs,.contract-bar,.form-footer{display:none!important;}
-  .app,.main,.right-panel,.contract-wrap{display:block;overflow:visible;height:auto;}
+  .app{display:block;height:auto;}
+  .main,.right-panel,.contract-wrap{display:block;overflow:visible;height:auto;}
   .contract-body{padding:0;background:#fff;overflow:visible;}
-  .contract-page{box-shadow:none;max-width:100%;margin:0;padding:13mm 15mm;min-height:calc(297mm - 26mm);}
-  .c-body{font-size:8.8pt;line-height:1.45;}
-  .c-body p{margin-bottom:4px;}
-  .c-signature{position:fixed;bottom:13mm;left:15mm;right:15mm;}
+  .contract-page{
+    box-shadow:none;
+    width:100%;
+    min-height:auto;
+    margin:0;
+    padding:15mm 18mm 20mm;
+  }
+  .c-body{font-size:9pt;line-height:1.5;}
+  .c-body p{margin-bottom:5px;text-align:justify;}
+  .c-section{page-break-after:avoid;}
+  .c-signature{margin-top:16mm;page-break-inside:avoid;}
   @page{size:A4;margin:0;}
 }
 </style>
@@ -874,7 +891,6 @@ function renderContract(){
   }
 
   document.getElementById('contractPage').innerHTML=`
-    <div class="c-no">Contrato No. ${no} · Ciclo ${ciclo}</div>
     <div class="c-header"><div class="c-title">CONTRATO INDIVIDUAL DE TRABAJO</div></div>
     <div class="c-body">
       <p>CONTRATO INDIVIDUAL DE TRABAJO <span data-editable>${tipo}</span> QUE CELEBRAN, POR UNA PARTE, LA SOCIEDAD DENOMINADA "COLEGIO YUCATÁN" SOCIEDAD CIVIL PARTICULAR, REPRESENTADA EN ESTE ACTO POR EL SEÑOR SERGIO FERNANDO ACOSTA VALENCIA, A QUIEN EN LO SUCESIVO Y PARA LOS EFECTOS DEL PRESENTE CONTRATO SE LE DENOMINARÁ "EL PATRÓN" Y POR LA OTRA, ${La} C. <span data-editable>${nombre}</span>, A QUIEN EN LO SUCESIVO Y PARA LOS EFECTOS DEL PRESENTE INSTRUMENTO SE LE DENOMINARÁ "${T}" MISMOS QUE SUJETAN AL TENER DE LAS SIGUIENTES DECLARACIONES Y CLÁUSULAS:</p>
