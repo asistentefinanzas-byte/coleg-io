@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RH — Contratos · Coleg.IO</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sidebar-w:220px;
+  --accent:#1B4332;--accent-light:#D1FAE5;--accent-mid:#2D6A4F;
+  --text:#111827;--text-2:#6B7280;--border:#E5E7EB;--bg:#F9FAFB;--white:#fff;
+  --red:#EF4444;--red-bg:#FEF2F2;--red-border:#FECACA;
+  --orange:#F97316;--orange-bg:#FFF7ED;--orange-border:#FED7AA;
+  --yellow:#F59E0B;--yellow-bg:#FFFBEB;--yellow-border:#FDE68A;
+  --blue:#3B82F6;--green:#22C55E;--green-bg:#F0FDF4;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);background:var(--accent);display:flex;flex-direction:column;flex-shrink:0;height:100vh;overflow-y:auto}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,.12)}
+.sidebar-logo a{font-family:'Playfair Display',serif;font-size:1.35rem;color:#fff;text-decoration:none}
+.sidebar-logo a em{font-style:normal;color:#6EE7B7}
+.sidebar-school{font-size:.7rem;color:rgba(255,255,255,.5);margin-top:2px}
+.sidebar-nav{list-style:none;padding:8px}
+.sidebar-nav li a{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:rgba(255,255,255,.75);text-decoration:none;font-size:.82rem;font-weight:500;transition:.15s}
+.sidebar-nav li a:hover,.sidebar-nav li a.active{background:rgba(255,255,255,.12);color:#fff}
+.sidebar-nav li a svg{width:16px;height:16px;flex-shrink:0}
+.sidebar-footer{margin-top:auto;padding:16px 12px;border-top:1px solid rgba(255,255,255,.12)}
+.avatar{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:#fff;flex-shrink:0}
+.sidebar-user{display:flex;align-items:center;gap:10px}
+.sidebar-user-name{font-size:.8rem;color:#fff;font-weight:600}
+.sidebar-user-role{font-size:.68rem;color:rgba(255,255,255,.5)}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:56px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;flex-shrink:0}
+.breadcrumb{font-size:.8rem;color:var(--text-2)}
+.breadcrumb a{color:var(--text-2);text-decoration:none}
+.topbar-center{flex:1;display:flex;justify-content:center}
+.view-toggle{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:3px;gap:2px}
+.vt-btn{padding:5px 16px;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text-2);transition:.15s;display:flex;align-items:center;gap:6px}
+.vt-btn.active{background:var(--white);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.conn-badge{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--text-2)}
+.conn-dot{width:7px;height:7px;border-radius:50%;background:#EF4444}
+.conn-dot.ok{background:#22C55E}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;border:none;transition:.15s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-mid)}
+.btn-sm{padding:5px 10px;font-size:.75rem}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-outline:hover{background:var(--bg)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+.btn-danger:hover{background:#FEE2E2}
+.btn-green{background:var(--green-bg);color:#166534;border:1px solid #BBF7D0}
+.btn-green:hover{background:#DCFCE7}
+
+/* ── VIEW: TARJETAS ── */
+.cards-view{flex:1;overflow-y:auto;padding:24px}
+.cards-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+.cards-toolbar select,.cards-toolbar input{padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;background:var(--white);outline:none}
+.cards-toolbar input{width:200px}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+.emp-card{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:.15s}
+.emp-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08);transform:translateY(-1px)}
+.card-header{padding:16px;display:flex;align-items:flex-start;gap:12px;border-bottom:1px solid var(--border)}
+.card-avatar{width:42px;height:42px;border-radius:50%;background:var(--accent-light);color:var(--accent);font-weight:700;font-size:.9rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card-name{font-size:.88rem;font-weight:700;color:var(--text);line-height:1.3}
+.card-puesto{font-size:.75rem;color:var(--text-2);margin-top:2px}
+.card-nivel{font-size:.7rem;font-weight:600;background:var(--accent-light);color:var(--accent);padding:2px 8px;border-radius:10px;margin-top:5px;display:inline-block}
+.card-body{padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.card-row{display:flex;justify-content:space-between;align-items:center;font-size:.78rem}
+.card-label{color:var(--text-2)}
+.card-value{color:var(--text);font-weight:500;text-align:right;max-width:60%}
+.alert-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:.72rem;font-weight:700;border:1px solid}
+.alert-ok{background:var(--green-bg);color:#166534;border-color:#BBF7D0}
+.alert-month{background:var(--yellow-bg);color:#92400E;border-color:var(--yellow-border)}
+.alert-2weeks{background:var(--orange-bg);color:#9A3412;border-color:var(--orange-border)}
+.alert-week{background:#FEF3C7;color:#B45309;border-color:#FCD34D}
+.alert-urgent{background:var(--red-bg);color:var(--red);border-color:var(--red-border)}
+.alert-expired{background:#1F2937;color:#F9FAFB;border-color:#374151}
+.alert-nodate{background:var(--bg);color:var(--text-2);border-color:var(--border)}
+.updated-label{font-size:.7rem;color:var(--text-2);display:flex;align-items:center;gap:4px;margin-top:2px}
+.card-footer{padding:10px 16px;display:flex;gap:8px;border-top:1px solid var(--border);background:var(--bg)}
+
+/* ── VIEW: DETALLE ── */
+.detail-view{flex:1;display:flex;overflow:hidden}
+.list-panel{width:280px;flex-shrink:0;border-right:1px solid var(--border);background:var(--white);display:flex;flex-direction:column;overflow:hidden}
+.list-toolbar{padding:10px;border-bottom:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap}
+.list-toolbar select,.list-toolbar input{flex:1;min-width:80px;padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:.75rem;outline:none}
+.employee-list{flex:1;overflow-y:auto}
+.nivel-group{padding:6px 12px 3px;font-size:.63rem;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.07em;background:var(--bg);border-bottom:1px solid var(--border)}
+.employee-row{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:.1s}
+.employee-row:hover{background:var(--bg)}
+.employee-row.active{background:var(--accent-light);border-left:3px solid var(--accent)}
+.emp-av2{width:30px;height:30px;border-radius:50%;background:var(--accent-light);color:var(--accent);font-weight:700;font-size:.72rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.emp-name2{font-size:.79rem;font-weight:600;color:var(--text);line-height:1.3}
+.emp-puesto2{font-size:.68rem;color:var(--text-2)}
+.alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-left:auto}
+.dot-ok{background:#22C55E}.dot-month{background:var(--yellow)}.dot-2weeks{background:var(--orange)}.dot-week{background:var(--orange)}.dot-urgent,.dot-expired{background:var(--red)}.dot-nodate{background:var(--border)}
+
+/* RIGHT PANEL */
+.right-panel{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.detail-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-2);gap:12px}
+.detail-empty svg{width:44px;height:44px;opacity:.3}
+.detail-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--white);padding:0 20px;flex-shrink:0}
+.tab-btn{padding:12px 16px;font-size:.82rem;font-weight:500;color:var(--text-2);cursor:pointer;border:none;background:transparent;border-bottom:2px solid transparent;transition:.15s}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.tab-actions{margin-left:auto;display:flex;align-items:center;gap:8px;padding:6px 0}
+
+/* FORM */
+.form-panel{flex:1;overflow-y:auto;padding:20px 24px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg.full{grid-column:1/-1}
+.fg label{font-size:.72rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em}
+.fg input,.fg select,.fg textarea{padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:.82rem;font-family:inherit;outline:none;transition:.15s;background:var(--white)}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(27,67,50,.07)}
+.fg textarea{resize:vertical;min-height:70px}
+.form-section{font-size:.88rem;font-weight:700;color:var(--text);margin:18px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--accent-light)}
+.form-actions{display:flex;gap:10px;padding:14px 24px;background:var(--white);border-top:1px solid var(--border);flex-shrink:0;align-items:center}
+.updated-info{margin-left:auto;font-size:.72rem;color:var(--text-2)}
+
+/* CONTRACT */
+.contract-panel{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.contract-toolbar{padding:10px 20px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.type-chip{padding:5px 12px;border-radius:20px;font-size:.73rem;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--white);color:var(--text-2);transition:.15s}
+.type-chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.edit-toggle{display:flex;align-items:center;gap:7px;margin-left:auto}
+.toggle-label{font-size:.76rem;color:var(--text-2)}
+.toggle-sw{width:34px;height:18px;background:var(--border);border-radius:18px;cursor:pointer;position:relative;transition:.2s;flex-shrink:0}
+.toggle-sw.on{background:var(--accent)}
+.toggle-sw::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:2px;left:2px;transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.toggle-sw.on::after{left:18px}
+.contract-body{flex:1;overflow-y:auto;padding:28px 40px;background:#e8e8e8}
+.contract-page{background:#fff;max-width:720px;margin:0 auto;padding:36px 46px;box-shadow:0 2px 16px rgba(0,0,0,.12);min-height:1050px;display:flex;flex-direction:column}
+.contract-page.edit-mode [contenteditable]{outline:1px dashed #93C5FD;border-radius:2px;background:rgba(219,234,254,.2)}
+.contract-page.edit-mode [contenteditable]:focus{outline:2px solid var(--blue);background:rgba(219,234,254,.35)}
+.c-header{text-align:center;margin-bottom:12px}
+.c-title{font-size:13pt;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.c-subtitle{font-size:9pt;color:#555;margin-top:3px}
+.c-no{font-size:8.5pt;text-align:right;margin-bottom:6px;color:#666}
+.c-body{font-size:9pt;line-height:1.55;color:#111;flex:1}
+.c-body p{margin-bottom:6px;text-align:justify}
+.c-body .c-intro{margin-bottom:10px;font-weight:500}
+.c-body .c-section{font-weight:700;margin-top:10px;margin-bottom:3px;text-transform:uppercase;font-size:8.5pt}
+.c-signature{margin-top:auto;padding-top:12px;border-top:1px solid #ddd;display:flex;justify-content:space-between;align-items:flex-end;flex-shrink:0}
+.c-sign-block{text-align:center;flex:1}
+.c-sign-line{border-top:1px solid #111;width:170px;margin:0 auto 3px}
+.c-sign-name{font-size:8pt;font-weight:600;text-transform:uppercase}
+.c-sign-role{font-size:7.5pt;color:#555}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:center;justify-content:center}
+.modal{background:var(--white);border-radius:14px;padding:28px;width:500px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal h3{font-size:1rem;font-weight:700;margin-bottom:6px}
+.modal p{font-size:.84rem;color:var(--text-2);margin-bottom:18px;line-height:1.5}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+
+/* PRINT */
+@media print{
+  body{display:block;height:auto}
+  .sidebar,.topbar,.list-panel,.detail-tabs,.contract-toolbar,.form-actions{display:none!important}
+  .main,.right-panel,.contract-panel{display:block;overflow:visible;height:auto}
+  .contract-body{padding:0;background:#fff;overflow:visible}
+  .contract-page{box-shadow:none;max-width:100%;margin:0;padding:13mm 15mm;min-height:calc(297mm - 26mm);page-break-inside:avoid}
+  .c-body{font-size:8.8pt;line-height:1.45}
+  .c-body p{margin-bottom:4px}
+  .c-signature{position:fixed;bottom:13mm;left:15mm;right:15mm}
+  @page{size:A4;margin:0}
+}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <a href="/"><span>Coleg</span><em>.IO</em></a>
+    <div class="sidebar-school">Yucatán</div>
+  </div>
+  <ul class="sidebar-nav" style="margin-top:8px">
+    <li><a href="/index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Inicio</a></li>
+    <li><a href="/modulos/conciliacion/index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Conciliación</a></li>
+    <li><a href="/modulos/reportes/index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Reportes</a></li>
+    <li><a href="/modulos/cobranza/index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Cobranza</a></li>
+    <li><a href="#" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>RH — Contratos</a></li>
+  </ul>
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="avatar">AR</div>
+      <div><div class="sidebar-user-name">Administrador</div><div class="sidebar-user-role">Super admin</div></div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="breadcrumb"><a href="/index.html">Inicio</a> › RH — Contratos</div>
+    <div class="topbar-center">
+      <div class="view-toggle">
+        <button class="vt-btn active" id="btnTarjetas" onclick="switchView('tarjetas')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Tarjetas
+        </button>
+        <button class="vt-btn" id="btnDetalle" onclick="switchView('detalle')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Detalle
+        </button>
+      </div>
+    </div>
+    <div class="conn-badge"><div class="conn-dot" id="connDot"></div><span id="connLabel">Conectando…</span></div>
+  </div>
+
+  <!-- VIEW: TARJETAS -->
+  <div id="viewTarjetas" class="cards-view">
+    <div class="cards-toolbar">
+      <input type="text" id="cardSearch" placeholder="Buscar empleado…" oninput="renderCards()">
+      <select id="cardNivel" onchange="renderCards()">
+        <option value="">Todos los niveles</option>
+        <option value="KINDER">Kinder</option><option value="PRIMARIA">Primaria</option>
+        <option value="SECUNDARIA">Secundaria</option><option value="DIRECTIVOS">Directivos</option>
+        <option value="ADMON">Admón</option>
+      </select>
+      <select id="cardAlerta" onchange="renderCards()">
+        <option value="">Todas las alertas</option>
+        <option value="expired">Vencidos</option><option value="urgent">Urgente (&lt;7 días)</option>
+        <option value="week">15 días</option><option value="month">1 mes</option><option value="ok">Al día</option>
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="newEmployee()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Nuevo empleado
+      </button>
+    </div>
+    <div class="cards-grid" id="cardsGrid"></div>
+  </div>
+
+  <!-- VIEW: DETALLE -->
+  <div id="viewDetalle" class="detail-view" style="display:none">
+    <div class="list-panel">
+      <div class="list-toolbar">
+        <input type="text" id="listSearch" placeholder="Buscar…" oninput="renderList()">
+        <select id="listNivel" onchange="renderList()">
+          <option value="">Todos</option>
+          <option value="KINDER">Kinder</option><option value="PRIMARIA">Primaria</option>
+          <option value="SECUNDARIA">Secundaria</option><option value="DIRECTIVOS">Directivos</option>
+          <option value="ADMON">Admón</option>
+        </select>
+      </div>
+      <div style="padding:8px 10px;border-bottom:1px solid var(--border)">
+        <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center" onclick="newEmployee()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Nuevo empleado
+        </button>
+      </div>
+      <div class="employee-list" id="employeeList"></div>
+    </div>
+
+    <div class="right-panel">
+      <div class="detail-empty" id="emptyState">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        <span style="font-size:.84rem">Selecciona un empleado</span>
+      </div>
+
+      <div id="detailContent" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+        <div class="detail-tabs">
+          <button class="tab-btn active" id="tabFormBtn" onclick="showTab('form')">Datos del empleado</button>
+          <button class="tab-btn" id="tabContractBtn" onclick="showTab('contract')">Contrato</button>
+          <div class="tab-actions">
+            <button class="btn btn-green btn-sm" onclick="openNewContractModal()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M12 9v6M9 12h6"/></svg>
+              Nuevo contrato
+            </button>
+            <button class="btn btn-danger btn-sm" id="deleteBtn" onclick="deleteEmployee()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              Eliminar
+            </button>
+          </div>
+        </div>
+
+        <!-- FORM TAB -->
+        <div id="formTab" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+          <div class="form-panel">
+            <div class="form-section">Información personal</div>
+            <div class="form-grid">
+              <div class="fg full"><label>Nombre completo</label><input id="f_nombre" type="text" placeholder="APELLIDO APELLIDO NOMBRE"></div>
+              <div class="fg"><label>Género</label>
+                <select id="f_genero"><option value="F">Femenino</option><option value="M">Masculino</option></select></div>
+              <div class="fg"><label>Fecha de nacimiento (letra)</label><input id="f_fecha_nac_letra" type="text" placeholder="15 de junio de 1982"></div>
+              <div class="fg"><label>Estado civil</label>
+                <select id="f_estado_civil">
+                  <option value="soltera">Soltera/o</option><option value="casada">Casada/o</option>
+                  <option value="divorciada">Divorciada/o</option><option value="viuda">Viuda/o</option>
+                </select></div>
+              <div class="fg"><label>CURP</label><input id="f_curp" type="text" style="text-transform:uppercase"></div>
+              <div class="fg full"><label>Domicilio</label><input id="f_domicilio" type="text"></div>
+              <div class="fg"><label>Ciudad</label><input id="f_ciudad" type="text" value="Mérida, Yucatán, México"></div>
+              <div class="fg"><label>C.P.</label><input id="f_cp" type="text" maxlength="5"></div>
+              <div class="fg"><label>Celular</label><input id="f_celular" type="tel"></div>
+              <div class="fg"><label>Correo</label><input id="f_correo" type="email"></div>
+            </div>
+
+            <div class="form-section">Datos laborales</div>
+            <div class="form-grid">
+              <div class="fg"><label>Nivel / Sección</label>
+                <select id="f_nivel">
+                  <option value="KINDER">Kinder</option><option value="PRIMARIA">Primaria</option>
+                  <option value="SECUNDARIA">Secundaria</option><option value="DIRECTIVOS">Directivos</option>
+                  <option value="ADMON">Administración</option>
+                </select></div>
+              <div class="fg"><label>Puesto</label>
+                <select id="f_puesto" onchange="autoFillFunciones()">
+                  <option>MAESTRA PRIMARIA/PREESCOLAR</option><option>ASISTENTE EDUCATIVO</option>
+                  <option>PSICÓLOGA</option><option>AUXILIAR ADMINISTRATIVO</option>
+                  <option>CAJA Y COBRANZA</option><option>ADMISIONES</option>
+                  <option>INTENDENTE</option><option>COCINA</option><option>COORDINADORA</option>
+                  <option>SUBDIRECTOR ACADÉMICO</option>
+                  <option>COORDINADOR DE SECUNDARIA Y PREPARATORIA</option>
+                  <option>DIRECTOR DE SECUNDARIA Y PREPARATORIA</option>
+                  <option>AUXILIAR DE MARKETING</option><option>RECURSOS MATERIALES</option>
+                  <option>DIRECTORA KINDER Y MATERNAL</option><option>ADMINISTRADORA GENERAL</option>
+                  <option>AUXILIAR CONTABLE ADMINISTRATIVO</option>
+                  <option>ENLACE OPERATIVO DGC</option><option>ORIENTADOR EDUCATIVO</option>
+                  <option>OTRO</option>
+                </select></div>
+              <div class="fg full">
+                <label>Funciones específicas <span style="font-weight:400;text-transform:none;font-size:.68rem;color:var(--text-2)">(se autorrellena al elegir puesto)</span></label>
+                <textarea id="f_funciones" rows="3"></textarea>
+              </div>
+              <div class="fg full"><label>Lugar de trabajo</label><input id="f_lugar_trabajo" type="text" placeholder="272 de la calle 28 x 35, Col. Residencial del Norte"></div>
+              <div class="fg"><label>Jornada (hrs/semana)</label><input id="f_jornada" type="text" value="40"></div>
+              <div class="fg"><label>Días de la semana</label><input id="f_dias_semana" type="text" value="Lunes a Viernes"></div>
+              <div class="fg"><label>Hora entrada</label><input id="f_hora_inicio" type="text" placeholder="6:45"></div>
+              <div class="fg"><label>Hora salida</label><input id="f_hora_termino" type="text" placeholder="14:45"></div>
+              <div class="fg full"><label>Días de descanso</label><input id="f_dia_descanso" type="text" value="Sábados y Domingos"></div>
+            </div>
+
+            <div class="form-section">Contrato y salario</div>
+            <div class="form-grid">
+              <div class="fg"><label>Tipo de contrato</label>
+                <select id="f_tipo_contrato">
+                  <option value="TIEMPO_DETERMINADO">Tiempo determinado</option>
+                  <option value="OBRA_DETERMINADA">Por obra determinada</option>
+                  <option value="PRUEBA">A prueba</option>
+                </select></div>
+              <div class="fg"><label>Ciclo escolar</label><input id="f_ciclo" type="text" value="2026-2027"></div>
+              <div class="fg"><label>Inicio de contrato (letra)</label><input id="f_inicio_contrato" type="text" placeholder="10 de agosto de 2026"></div>
+              <div class="fg"><label>Término de contrato (letra)</label><input id="f_termino_contrato" type="text" placeholder="9 de julio de 2027"></div>
+              <div class="fg full">
+                <label>Fecha de término <span style="font-weight:400;text-transform:none;font-size:.68rem;color:var(--text-2)">(para calcular alertas de renovación)</span></label>
+                <input id="f_termino_fecha" type="date">
+              </div>
+              <div class="fg"><label>Sueldo diario ($)</label><input id="f_sueldo_diario" type="number" step="0.01" oninput="autoLetra()"></div>
+              <div class="fg"><label>Sueldo diario en letra</label><input id="f_sueldo_letra" type="text"></div>
+              <div class="fg"><label>SDI</label><input id="f_sdi" type="number" step="0.01"></div>
+              <div class="fg"><label>Sueldo quincenal</label><input id="f_sueldo" type="number" step="0.01"></div>
+              <div class="fg"><label>Bono productividad</label><input id="f_bono_prod" type="number" step="0.01"></div>
+              <div class="fg"><label>Bono puntualidad</label><input id="f_bono_punt" type="number" step="0.01"></div>
+              <div class="fg"><label>Despensa</label><input id="f_despensa" type="number" step="0.01"></div>
+              <div class="fg"><label>Fecha firma</label><input id="f_fecha_firma" type="text" placeholder="09 de Julio 2025"></div>
+              <div class="fg full"><label>Beneficiario (Art. 501 LFT)</label><input id="f_beneficiario" type="text"></div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="saveEmployee()">Guardar cambios</button>
+            <button class="btn btn-outline" onclick="showTab('contract')">Ver contrato →</button>
+            <span class="updated-info" id="updatedInfo"></span>
+          </div>
+        </div>
+
+        <!-- CONTRACT TAB -->
+        <div id="contractTab" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+          <div class="contract-toolbar">
+            <span style="font-size:.78rem;font-weight:600;color:var(--text-2)">Tipo:</span>
+            <div class="type-chip active" onclick="setType('TIEMPO_DETERMINADO')" data-type="TIEMPO_DETERMINADO">Tiempo determinado</div>
+            <div class="type-chip" onclick="setType('OBRA_DETERMINADA')" data-type="OBRA_DETERMINADA">Por obra determinada</div>
+            <div class="type-chip" onclick="setType('PRUEBA')" data-type="PRUEBA">A prueba</div>
+            <div class="edit-toggle">
+              <span class="toggle-label">Edición</span>
+              <div class="toggle-sw" id="editToggle" onclick="toggleEdit()"></div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="window.print()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              Imprimir / PDF
+            </button>
+          </div>
+          <div class="contract-body">
+            <div class="contract-page" id="contractPage"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Nuevo contrato -->
+<div class="modal-overlay" id="newContractModal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h3>Crear nuevo contrato</h3>
+    <p>Los datos personales y laborales de <strong id="modalEmpName"></strong> se conservarán.<br>Solo actualiza el tipo de contrato y las fechas del nuevo período.</p>
+    <div class="form-grid">
+      <div class="fg"><label>Tipo de contrato</label>
+        <select id="modal_tipo">
+          <option value="TIEMPO_DETERMINADO">Tiempo determinado</option>
+          <option value="OBRA_DETERMINADA">Por obra determinada</option>
+          <option value="PRUEBA">A prueba</option>
+        </select></div>
+      <div class="fg"><label>Ciclo escolar</label><input id="modal_ciclo" type="text" value="2026-2027"></div>
+      <div class="fg"><label>Inicio (en letra)</label><input id="modal_inicio" type="text" placeholder="10 de agosto de 2026"></div>
+      <div class="fg"><label>Término (en letra)</label><input id="modal_termino" type="text" placeholder="9 de julio de 2027"></div>
+      <div class="fg full"><label>Fecha de término (para alertas)</label><input id="modal_fecha" type="date"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="applyNewContract()">Aplicar y ver contrato</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://kqbeoymmpbnhgwyhtfiq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxYmVveW1tcGJuaGd3eWh0ZmlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMjU1MjIsImV4cCI6MjA5NzgwMTUyMn0.dJory8gvUyWce_7ICn3LVcWW0R-iJtXS8YmJvPjzEtY';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const IS_SUPER_ADMIN = true;
+
+let employees = [], currentEmp = null, contractType = 'TIEMPO_DETERMINADO', editMode = false;
+
+// ── FUNCIONES POR PUESTO (Excel — hoja PUESTOS) ──
+const PUESTOS_FUNCIONES = {
+  'MAESTRA PRIMARIA/PREESCOLAR':'impartir clases y todo lo relacionado con el área académica, así como el cumplimiento en tiempo y forma de lo solicitado por su jefe inmediato. Asistir a las juntas de padres de familia, festivales, capacitación y toda actividad que organice la escuela durante el curso escolar.',
+  'ASISTENTE EDUCATIVO':'apoyar a la coordinadora en lo que requiera, auxiliar a la docente en la aplicación de las actividades pedagógicas, atender y supervisar a los alumnos en los tiempos de recreo y traslado, así como apoyar en las actividades institucionales programadas.',
+  'PSICÓLOGA':'atender a los alumnos canalizados por los docentes o coordinadores, brindar orientación a padres de familia, aplicar evaluaciones psicométricas, elaborar reportes de seguimiento y participar en las actividades institucionales que se le indiquen.',
+  'AUXILIAR ADMINISTRATIVO':'apoyar en las labores administrativas del área asignada, atender a padres de familia y alumnos, archivar y controlar documentos, elaborar reportes y apoyar en todas las actividades que le indique su jefe inmediato.',
+  'CAJA Y COBRANZA':'realizar el cobro de colegiaturas y demás conceptos de pago, emitir recibos, controlar el flujo de caja diario, realizar cortes de caja, elaborar reportes de cobranza y dar seguimiento a los adeudos de alumnos.',
+  'ADMISIONES':'atender a los prospectos y padres de familia interesados en inscribir a sus hijos, brindar información sobre los servicios educativos, coordinar visitas escolares, dar seguimiento al proceso de admisión y apoyar en las actividades de marketing y difusión institucional.',
+  'INTENDENTE':'mantener en óptimas condiciones de limpieza y orden todas las instalaciones del plantel, así como realizar las labores de mantenimiento menor que se le indiquen.',
+  'COCINA':'preparar los alimentos del servicio de comedor escolar conforme al menú establecido, mantener en condiciones higiénicas la cocina y utensilios, y cumplir con las normas de salud e inocuidad alimentaria.',
+  'COORDINADORA':'coordinar las actividades académicas y administrativas del nivel a su cargo, supervisar el desempeño docente, atender a padres de familia, elaborar reportes de rendimiento académico y participar en los consejos técnicos y actividades institucionales.',
+  'SUBDIRECTOR ACADÉMICO':'apoyar a la Dirección en la supervisión y evaluación del programa académico, coordinar a los docentes y coordinadores, elaborar e implementar estrategias de mejora educativa y atender a padres de familia.',
+  'COORDINADOR DE SECUNDARIA Y PREPARATORIA':'coordinar las actividades académicas del nivel medio y medio superior, supervisar el desempeño docente, dar seguimiento a los alumnos con rezago académico, atender a padres de familia y participar en actividades institucionales.',
+  'DIRECTOR DE SECUNDARIA Y PREPARATORIA':'dirigir y supervisar las actividades académicas y administrativas del nivel medio y medio superior, gestionar los recursos humanos y materiales del nivel, representar a la institución ante autoridades educativas y cumplir los requerimientos de la SEP y la DGC.',
+  'AUXILIAR DE MARKETING':'apoyar en la creación de contenido para redes sociales, diseño de materiales promocionales, gestión de la imagen institucional, atención a prospectos y apoyo en eventos de difusión y admisiones.',
+  'RECURSOS MATERIALES':'controlar el inventario de materiales y equipos del plantel, gestionar las compras de insumos, coordinar el mantenimiento de instalaciones y equipos, y elaborar los reportes de inventario que se le soliciten.',
+  'DIRECTORA KINDER Y MATERNAL':'dirigir y supervisar las actividades académicas y administrativas del nivel inicial y preescolar, gestionar los recursos humanos del nivel, atender a padres de familia, coordinar las evaluaciones y reportes pedagógicos y representar al nivel en actividades institucionales.',
+  'ADMINISTRADORA GENERAL':'administrar los recursos humanos, financieros y materiales de la institución, coordinar actividades administrativas, supervisar los procesos de nómina, tesorería y cobranza, velar por el cumplimiento de la normativa institucional y apoyar a la Dirección General.',
+  'AUXILIAR CONTABLE ADMINISTRATIVO':'registrar y controlar las operaciones contables de la institución, elaborar estados financieros básicos, conciliar cuentas bancarias, apoyar en la elaboración de reportes fiscales y administrativos.',
+  'ENLACE OPERATIVO DGC':'gestionar los trámites y requerimientos de la Dirección General de Colegios ante las autoridades educativas, mantener actualizada la documentación oficial, dar seguimiento a las validaciones de estudios y certificados y coordinar las visitas de supervisión.',
+  'ORIENTADOR EDUCATIVO':'brindar orientación vocacional y psicopedagógica a los alumnos, apoyar en la resolución de conflictos escolares, coordinar programas de prevención y bienestar estudiantil, y elaborar los reportes e informes que le soliciten.',
+};
+
+// ── DEMO DATA ──
+const DEMO = [
+  {id:'1',no:1,nombre:'YOLANDA LISSET CAAMAL CANCHE',genero:'F',nivel:'KINDER',puesto:'MAESTRA PRIMARIA/PREESCOLAR',
+   fecha_nac_letra:'15 de junio de 1982',estado_civil:'soltera',curp:'CACY820615MYNMNL04',
+   domicilio:'327 de la calle 36 x 115 y 117 Colonia Francisco Villa Poniente',ciudad:'Mérida, Yucatán, México',cp:'97219',
+   celular:'9995760187',correo:'yoli150682@hotmail.com',sueldo_diario:315.05,sueldo_diario_letra:'TRESCIENTOS QUINCE PESOS 05/100 M.N',
+   sdi:280.69,sueldo:4725.75,bono_prod:141.77,bono_punt:0,despensa:141.77,
+   jornada:'40',dias_semana:'Lunes a Viernes',hora_inicio:'6:45',hora_termino:'14:45',dia_descanso:'Sábados y Domingos',
+   inicio_contrato:'10 de agosto de 2026',termino_contrato:'9 de julio de 2027',termino_fecha:'2027-07-09',ciclo:'2026-2027',
+   fecha_firma:'09 de Julio 2025',beneficiario:'DEMETRIA CAAMAL CANCHE',
+   lugar_trabajo:'272 de la calle 28 x 35, Col. Residencial del Norte',
+   funciones:'impartir clases y todo lo relacionado con el área académica, así como el cumplimiento en tiempo y forma de lo solicitado por su jefe inmediato. Asistir a las juntas de padres de familia, festivales, capacitación y toda actividad que organice la escuela durante el curso escolar.',
+   tipo_contrato:'TIEMPO_DETERMINADO',updated_at:'2025-07-09T10:00:00Z'},
+  {id:'2',no:2,nombre:'PAULINA MARTINEZ HERRERA',genero:'F',nivel:'KINDER',puesto:'ASISTENTE EDUCATIVO',
+   fecha_nac_letra:'3 de marzo de 1990',estado_civil:'casada',curp:'MAHP900303MYNRRX01',
+   domicilio:'45 Calle 60 x 37 y 39, Col. Centro',ciudad:'Mérida, Yucatán, México',cp:'97000',
+   celular:'9991234567',correo:'paulina.martinez@colegioyucatan.mx',sueldo_diario:250.00,sueldo_diario_letra:'DOSCIENTOS CINCUENTA PESOS 00/100 M.N',
+   sdi:220.00,sueldo:3750.00,bono_prod:112.50,bono_punt:0,despensa:112.50,
+   jornada:'40',dias_semana:'Lunes a Viernes',hora_inicio:'7:00',hora_termino:'14:00',dia_descanso:'Sábados y Domingos',
+   inicio_contrato:'10 de agosto de 2025',termino_contrato:'9 de julio de 2026',termino_fecha:'2026-07-09',ciclo:'2025-2026',
+   fecha_firma:'09 de Julio 2024',beneficiario:'CARLOS MARTINEZ HERRERA',
+   lugar_trabajo:'272 de la calle 28 x 35, Col. Residencial del Norte',
+   funciones:'apoyar a la coordinadora en lo que requiera, auxiliar a la docente en la aplicación de las actividades pedagógicas.',
+   tipo_contrato:'TIEMPO_DETERMINADO',updated_at:'2024-07-09T08:00:00Z'},
+  {id:'3',no:13,nombre:'GISELLE ALEJANDRA CHAN PEREZ',genero:'F',nivel:'PRIMARIA',puesto:'MAESTRA PRIMARIA/PREESCOLAR',
+   fecha_nac_letra:'22 de septiembre de 1988',estado_civil:'soltera',curp:'CAPG880922MYNHRX05',
+   domicilio:'123 Calle 23 x 14, Col. García Ginerés',ciudad:'Mérida, Yucatán, México',cp:'97070',
+   celular:'9997654321',correo:'giselle.chan@colegioyucatan.mx',sueldo_diario:315.05,sueldo_diario_letra:'TRESCIENTOS QUINCE PESOS 05/100 M.N',
+   sdi:280.00,sueldo:4725.75,bono_prod:141.77,bono_punt:0,despensa:141.77,
+   jornada:'40',dias_semana:'Lunes a Viernes',hora_inicio:'7:00',hora_termino:'14:30',dia_descanso:'Sábados y Domingos',
+   inicio_contrato:'10 de agosto de 2026',termino_contrato:'16 de julio de 2026',termino_fecha:'2026-07-16',ciclo:'2026-2027',
+   fecha_firma:'09 de Julio 2025',beneficiario:'ROSA PEREZ DZUL',
+   lugar_trabajo:'272 de la calle 28 x 35, Col. Residencial del Norte',
+   funciones:'impartir clases y todo lo relacionado con el área académica.',
+   tipo_contrato:'TIEMPO_DETERMINADO',updated_at:'2025-07-09T09:00:00Z'},
+  {id:'4',no:40,nombre:'SERGIO FERNANDO ACOSTA VALENCIA',genero:'M',nivel:'DIRECTIVOS',puesto:'ADMINISTRADORA GENERAL',
+   fecha_nac_letra:'10 de enero de 1975',estado_civil:'casado',curp:'AOVS750110HMNCRL08',
+   domicilio:'Privada 12 x 43 y 45, Col. Residencial Pensiones',ciudad:'Mérida, Yucatán, México',cp:'97217',
+   celular:'9998765432',correo:'direccion@colegioyucatan.mx',sueldo_diario:850.00,sueldo_diario_letra:'OCHOCIENTOS CINCUENTA PESOS 00/100 M.N',
+   sdi:750.00,sueldo:12750.00,bono_prod:382.50,bono_punt:0,despensa:382.50,
+   jornada:'48',dias_semana:'Lunes a Sábado',hora_inicio:'8:00',hora_termino:'16:00',dia_descanso:'Domingos',
+   inicio_contrato:'10 de agosto de 2026',termino_contrato:'9 de julio de 2027',termino_fecha:'2026-07-01',ciclo:'2026-2027',
+   fecha_firma:'09 de Julio 2025',beneficiario:'MARIA ACOSTA VALENCIA',
+   lugar_trabajo:'272 de la calle 28 x 35, Col. Residencial del Norte',
+   funciones:'administrar los recursos humanos, financieros y materiales de la institución.',
+   tipo_contrato:'TIEMPO_DETERMINADO',updated_at:'2025-07-09T11:00:00Z'},
+];
+
+// ── ALERT LOGIC ──
+function getAlertInfo(termino_fecha){
+  if(!termino_fecha) return {level:'nodate',label:'Sin fecha de término',dias:null};
+  const today = new Date(); today.setHours(0,0,0,0);
+  const end = new Date(termino_fecha+'T00:00:00');
+  const dias = Math.ceil((end - today) / 86400000);
+  if(dias < 0)   return {level:'expired', label:`Vencido hace ${Math.abs(dias)} día${Math.abs(dias)!==1?'s':''}`, dias};
+  if(dias === 0) return {level:'urgent',  label:'Vence hoy', dias};
+  if(dias <= 7)  return {level:'urgent',  label:`Urgente · ${dias} día${dias!==1?'s':''}`, dias};
+  if(dias <= 15) return {level:'week',    label:`${dias} días para renovar`, dias};
+  if(dias <= 30) return {level:'2weeks',  label:`${dias} días para renovar`, dias};
+  if(dias <= 60) return {level:'month',   label:`${dias} días para renovar`, dias};
+  return {level:'ok', label:'Al día', dias};
+}
+const BADGE_CLASS = {ok:'alert-ok',month:'alert-month','2weeks':'alert-2weeks',week:'alert-week',urgent:'alert-urgent',expired:'alert-expired',nodate:'alert-nodate'};
+const DOT_CLASS   = {ok:'dot-ok',month:'dot-month','2weeks':'dot-2weeks',week:'dot-week',urgent:'dot-urgent',expired:'dot-expired',nodate:'dot-nodate'};
+function alertIcon(level){
+  if(level==='ok') return '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+  if(level==='nodate') return '';
+  if(level==='expired') return '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+  return '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+}
+
+// ── INIT ──
+async function init(){
+  try{
+    const {data,error} = await sb.from('contratos_rh').select('*').order('no');
+    if(error) throw error;
+    employees = data && data.length ? data : DEMO;
+    document.getElementById('connDot').className='conn-dot ok';
+    document.getElementById('connLabel').textContent = data && data.length ? 'Conectado':'Modo demo';
+  }catch(e){
+    employees = DEMO;
+    document.getElementById('connLabel').textContent='Modo demo';
+  }
+  if(!IS_SUPER_ADMIN) document.getElementById('deleteBtn').style.display='none';
+  renderCards(); renderList();
+}
+
+// ── VIEW SWITCH ──
+function switchView(v){
+  document.getElementById('viewTarjetas').style.display = v==='tarjetas'?'block':'none';
+  document.getElementById('viewDetalle').style.display  = v==='detalle' ?'flex':'none';
+  document.getElementById('btnTarjetas').className = 'vt-btn'+(v==='tarjetas'?' active':'');
+  document.getElementById('btnDetalle').className  = 'vt-btn'+(v==='detalle' ?' active':'');
+}
+
+// ── CARDS ──
+function renderCards(){
+  const search = (document.getElementById('cardSearch').value||'').toLowerCase();
+  const nivel  = document.getElementById('cardNivel').value;
+  const alerta = document.getElementById('cardAlerta').value;
+  const filtered = employees.filter(e=>{
+    if(nivel && e.nivel!==nivel) return false;
+    if(search && !e.nombre.toLowerCase().includes(search) && !(e.puesto||'').toLowerCase().includes(search)) return false;
+    if(alerta){ const info=getAlertInfo(e.termino_fecha); if(info.level!==alerta) return false; }
+    return true;
+  });
+  const grid = document.getElementById('cardsGrid');
+  if(!filtered.length){ grid.innerHTML='<div style="color:var(--text-2);font-size:.84rem;padding:8px">Sin resultados.</div>'; return; }
+  grid.innerHTML = filtered.map(e=>{
+    const initials = e.nombre.trim().split(' ').slice(-2).map(w=>w[0]).join('');
+    const info = getAlertInfo(e.termino_fecha);
+    const upd = e.updated_at ? fmtDate(e.updated_at) : '—';
+    return `<div class="emp-card">
+      <div class="card-header">
+        <div class="card-avatar">${initials}</div>
+        <div style="flex:1;min-width:0">
+          <div class="card-name">${titleCase(e.nombre)}</div>
+          <div class="card-puesto">${e.puesto||''}</div>
+          <div class="card-nivel">${e.nivel||''}</div>
+        </div>
+        <span class="alert-badge ${BADGE_CLASS[info.level]||'alert-nodate'}">${alertIcon(info.level)} ${info.label}</span>
+      </div>
+      <div class="card-body">
+        <div class="card-row"><span class="card-label">Tipo de contrato</span><span class="card-value">${fmtTipo(e.tipo_contrato)}</span></div>
+        <div class="card-row"><span class="card-label">Ciclo escolar</span><span class="card-value">${e.ciclo||'—'}</span></div>
+        <div class="card-row"><span class="card-label">Término</span><span class="card-value">${e.termino_contrato||'—'}</span></div>
+        ${info.dias!==null?`<div class="card-row"><span class="card-label">Días restantes</span><span class="card-value" style="font-weight:700;color:${info.dias<0?'#374151':info.dias<=7?'var(--red)':info.dias<=30?'#9A3412':'#166534'}">${info.dias<0?`Venció hace ${Math.abs(info.dias)}d`:info.dias===0?'Vence hoy':info.dias+'d'}</span></div>`:''}
+        <div class="card-row"><span class="updated-label"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Actualizado: ${upd}</span></div>
+      </div>
+      <div class="card-footer">
+        <button class="btn btn-outline btn-sm" onclick="openCardContract('${e.id}')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+          Ver contrato
+        </button>
+        <button class="btn btn-green btn-sm" onclick="openCardNewContract('${e.id}')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Nuevo contrato
+        </button>
+        <button class="btn btn-outline btn-sm" style="margin-left:auto" onclick="openCardEdit('${e.id}')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Editar
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openCardEdit(id){ selectEmployee(id); switchView('detalle'); showTab('form'); }
+function openCardContract(id){ selectEmployee(id); switchView('detalle'); showTab('contract'); }
+function openCardNewContract(id){ selectEmployee(id); switchView('detalle'); openNewContractModal(); }
+
+// ── LIST ──
+function renderList(){
+  const search = (document.getElementById('listSearch').value||'').toLowerCase();
+  const nivel  = document.getElementById('listNivel').value;
+  const order  = ['KINDER','PRIMARIA','SECUNDARIA','DIRECTIVOS','ADMON'];
+  const groups = {};
+  employees.forEach(e=>{
+    if(nivel && e.nivel!==nivel) return;
+    if(search && !e.nombre.toLowerCase().includes(search) && !(e.puesto||'').toLowerCase().includes(search)) return;
+    if(!groups[e.nivel]) groups[e.nivel]=[];
+    groups[e.nivel].push(e);
+  });
+  const el = document.getElementById('employeeList'); el.innerHTML='';
+  order.forEach(n=>{
+    if(!groups[n]) return;
+    el.innerHTML+=`<div class="nivel-group">${n}</div>`;
+    groups[n].forEach(e=>{
+      const ini = e.nombre.trim().split(' ').slice(-2).map(w=>w[0]).join('');
+      const info= getAlertInfo(e.termino_fecha);
+      const act = currentEmp && currentEmp.id===e.id?'active':'';
+      el.innerHTML+=`<div class="employee-row ${act}" onclick="selectEmployee('${e.id}')">
+        <div class="emp-av2">${ini}</div>
+        <div style="flex:1;min-width:0"><div class="emp-name2">${titleCase(e.nombre)}</div><div class="emp-puesto2">${e.puesto||''}</div></div>
+        <div class="alert-dot ${DOT_CLASS[info.level]||'dot-nodate'}" title="${info.label}"></div>
+      </div>`;
+    });
+  });
+}
+
+// ── SELECT ──
+function selectEmployee(id){
+  currentEmp = employees.find(e=>e.id===id);
+  if(!currentEmp) return;
+  document.getElementById('emptyState').style.display='none';
+  const dc=document.getElementById('detailContent');
+  dc.style.cssText='display:flex;flex-direction:column;overflow:hidden;flex:1';
+  fillForm(currentEmp); showTab('form'); renderList();
+}
+
+// ── FILL FORM ──
+function fillForm(e){
+  const f=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v!=null?v:''};
+  f('f_nombre',e.nombre); f('f_genero',e.genero||'F'); f('f_fecha_nac_letra',e.fecha_nac_letra);
+  f('f_estado_civil',e.estado_civil||'soltera'); f('f_curp',e.curp); f('f_domicilio',e.domicilio);
+  f('f_ciudad',e.ciudad||'Mérida, Yucatán, México'); f('f_cp',e.cp); f('f_celular',e.celular); f('f_correo',e.correo);
+  f('f_nivel',e.nivel||'KINDER'); f('f_puesto',e.puesto); f('f_funciones',e.funciones);
+  f('f_lugar_trabajo',e.lugar_trabajo); f('f_jornada',e.jornada||'40');
+  f('f_dias_semana',e.dias_semana||'Lunes a Viernes'); f('f_hora_inicio',e.hora_inicio);
+  f('f_hora_termino',e.hora_termino); f('f_dia_descanso',e.dia_descanso||'Sábados y Domingos');
+  f('f_tipo_contrato',e.tipo_contrato||'TIEMPO_DETERMINADO'); f('f_ciclo',e.ciclo||'2026-2027');
+  f('f_inicio_contrato',e.inicio_contrato); f('f_termino_contrato',e.termino_contrato);
+  f('f_termino_fecha',e.termino_fecha||''); f('f_sueldo_diario',e.sueldo_diario||'');
+  f('f_sueldo_letra',e.sueldo_diario_letra); f('f_sdi',e.sdi||''); f('f_sueldo',e.sueldo||'');
+  f('f_bono_prod',e.bono_prod||''); f('f_bono_punt',e.bono_punt||''); f('f_despensa',e.despensa||'');
+  f('f_fecha_firma',e.fecha_firma); f('f_beneficiario',e.beneficiario);
+  contractType = e.tipo_contrato||'TIEMPO_DETERMINADO'; syncTypeChips();
+  document.getElementById('updatedInfo').textContent = e.updated_at ? 'Actualizado: '+fmtDate(e.updated_at) : '';
+}
+
+function readForm(){
+  const v=id=>(document.getElementById(id)||{}).value||'';
+  return {
+    nombre:v('f_nombre').toUpperCase().trim(), genero:v('f_genero'),
+    fecha_nac_letra:v('f_fecha_nac_letra'), estado_civil:v('f_estado_civil'),
+    curp:v('f_curp').toUpperCase().trim(), domicilio:v('f_domicilio'),
+    ciudad:v('f_ciudad'), cp:v('f_cp'), celular:v('f_celular'), correo:v('f_correo'),
+    nivel:v('f_nivel'), puesto:v('f_puesto'), funciones:v('f_funciones'),
+    lugar_trabajo:v('f_lugar_trabajo'), jornada:v('f_jornada'),
+    dias_semana:v('f_dias_semana'), hora_inicio:v('f_hora_inicio'), hora_termino:v('f_hora_termino'),
+    dia_descanso:v('f_dia_descanso'), tipo_contrato:v('f_tipo_contrato'), ciclo:v('f_ciclo'),
+    inicio_contrato:v('f_inicio_contrato'), termino_contrato:v('f_termino_contrato'),
+    termino_fecha:v('f_termino_fecha')||null,
+    sueldo_diario:parseFloat(v('f_sueldo_diario'))||0, sueldo_diario_letra:v('f_sueldo_letra'),
+    sdi:parseFloat(v('f_sdi'))||0, sueldo:parseFloat(v('f_sueldo'))||0,
+    bono_prod:parseFloat(v('f_bono_prod'))||0, bono_punt:parseFloat(v('f_bono_punt'))||0,
+    despensa:parseFloat(v('f_despensa'))||0, fecha_firma:v('f_fecha_firma'), beneficiario:v('f_beneficiario'),
+  };
+}
+
+// ── AUTO FUNCIONES ──
+function autoFillFunciones(){
+  const puesto = document.getElementById('f_puesto').value;
+  const el = document.getElementById('f_funciones');
+  const desc = PUESTOS_FUNCIONES[puesto];
+  if(!desc) return;
+  if(!el.value || el.value===PUESTOS_FUNCIONES[currentEmp&&currentEmp.puesto] || confirm('¿Reemplazar las funciones con la descripción del puesto seleccionado?')){
+    el.value = desc;
+  }
+}
+
+// ── SAVE ──
+async function saveEmployee(){
+  const data = readForm();
+  data.updated_at = new Date().toISOString();
+  Object.assign(currentEmp, data);
+  try{
+    if(currentEmp.id && !String(currentEmp.id).startsWith('new')){
+      await sb.from('contratos_rh').upsert({...data, id:currentEmp.id});
+    } else {
+      const {data:ins} = await sb.from('contratos_rh').insert({...data,no:currentEmp.no}).select().single();
+      if(ins) currentEmp.id=ins.id;
+    }
+  }catch(e){}
+  const idx=employees.findIndex(e=>e.id===currentEmp.id);
+  if(idx>=0) employees[idx]={...currentEmp};
+  renderCards(); renderList();
+  document.getElementById('updatedInfo').textContent='Actualizado: '+fmtDate(data.updated_at);
+  showToast('Cambios guardados correctamente');
+}
+
+// ── NEW EMPLOYEE ──
+function newEmployee(){
+  const no = employees.length+1;
+  currentEmp={id:'new_'+Date.now(),no,nombre:'',genero:'F',nivel:'KINDER',puesto:'MAESTRA PRIMARIA/PREESCOLAR',
+    ciclo:'2026-2027',tipo_contrato:'TIEMPO_DETERMINADO',jornada:'40',
+    dias_semana:'Lunes a Viernes',dia_descanso:'Sábados y Domingos',ciudad:'Mérida, Yucatán, México',
+    funciones:PUESTOS_FUNCIONES['MAESTRA PRIMARIA/PREESCOLAR']};
+  employees.push(currentEmp);
+  fillForm(currentEmp);
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('detailContent').style.cssText='display:flex;flex-direction:column;overflow:hidden;flex:1';
+  switchView('detalle'); showTab('form'); renderList();
+}
+
+// ── DELETE ──
+async function deleteEmployee(){
+  if(!IS_SUPER_ADMIN){alert('Solo el super administrador puede eliminar registros.');return;}
+  if(!confirm(`¿Eliminar a ${currentEmp.nombre}? Esta acción no se puede deshacer.`)) return;
+  try{await sb.from('contratos_rh').delete().eq('id',currentEmp.id);}catch(e){}
+  employees=employees.filter(e=>e.id!==currentEmp.id);
+  currentEmp=null;
+  document.getElementById('detailContent').style.display='none';
+  document.getElementById('emptyState').style.display='flex';
+  renderCards(); renderList();
+}
+
+// ── NEW CONTRACT MODAL ──
+function openNewContractModal(){
+  if(!currentEmp){alert('Selecciona un empleado primero.');return;}
+  document.getElementById('modalEmpName').textContent=titleCase(currentEmp.nombre||'');
+  document.getElementById('modal_tipo').value=currentEmp.tipo_contrato||'TIEMPO_DETERMINADO';
+  document.getElementById('modal_ciclo').value=currentEmp.ciclo||'2026-2027';
+  document.getElementById('modal_inicio').value='';
+  document.getElementById('modal_termino').value='';
+  document.getElementById('modal_fecha').value='';
+  document.getElementById('newContractModal').style.display='flex';
+}
+function closeModal(){document.getElementById('newContractModal').style.display='none';}
+function applyNewContract(){
+  const tipo=document.getElementById('modal_tipo').value;
+  const ciclo=document.getElementById('modal_ciclo').value;
+  const inicio=document.getElementById('modal_inicio').value;
+  const termino=document.getElementById('modal_termino').value;
+  const fecha=document.getElementById('modal_fecha').value;
+  document.getElementById('f_tipo_contrato').value=tipo;
+  document.getElementById('f_ciclo').value=ciclo;
+  document.getElementById('f_inicio_contrato').value=inicio;
+  document.getElementById('f_termino_contrato').value=termino;
+  document.getElementById('f_termino_fecha').value=fecha;
+  contractType=tipo; closeModal();
+  Object.assign(currentEmp,{tipo_contrato:tipo,ciclo,inicio_contrato:inicio,termino_contrato:termino,termino_fecha:fecha});
+  showTab('contract'); renderContract();
+}
+
+// ── TABS ──
+function showTab(tab){
+  document.getElementById('formTab').style.display     = tab==='form'    ?'flex':'none';
+  document.getElementById('contractTab').style.display = tab==='contract'?'flex':'none';
+  document.getElementById('tabFormBtn').className    = 'tab-btn'+(tab==='form'    ?' active':'');
+  document.getElementById('tabContractBtn').className= 'tab-btn'+(tab==='contract'?' active':'');
+  if(tab==='contract'){Object.assign(currentEmp,readForm());renderContract();}
+}
+
+// ── CONTRACT TYPE ──
+function setType(type){ contractType=type; syncTypeChips(); renderContract(); }
+function syncTypeChips(){ document.querySelectorAll('.type-chip').forEach(c=>c.classList.toggle('active',c.dataset.type===contractType)); }
+
+// ── EDIT MODE ──
+function toggleEdit(){
+  editMode=!editMode;
+  document.getElementById('editToggle').classList.toggle('on',editMode);
+  document.getElementById('contractPage').classList.toggle('edit-mode',editMode);
+  document.querySelectorAll('#contractPage [data-editable]').forEach(el=>el.contentEditable=editMode?'true':'false');
+}
+
+// ── UTILS ──
+function titleCase(s){ return (s||'').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()); }
+function fmtTipo(t){ return {TIEMPO_DETERMINADO:'Tiempo determinado',OBRA_DETERMINADA:'Por obra determinada',PRUEBA:'A prueba'}[t]||t||'—'; }
+function fmtDate(iso){
+  if(!iso) return '—';
+  return new Date(iso).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+}
+function numToWords(n){
+  const u=['','UNO','DOS','TRES','CUATRO','CINCO','SEIS','SIETE','OCHO','NUEVE','DIEZ',
+    'ONCE','DOCE','TRECE','CATORCE','QUINCE','DIECISÉIS','DIECISIETE','DIECIOCHO','DIECINUEVE'];
+  const d=['','','VEINTE','TREINTA','CUARENTA','CINCUENTA','SESENTA','SETENTA','OCHENTA','NOVENTA'];
+  if(n===0)return'CERO';if(n<20)return u[n];
+  if(n%10===0)return d[Math.floor(n/10)];
+  if(Math.floor(n/10)===2)return'VEINTI'+u[n%10];
+  return d[Math.floor(n/10)]+' Y '+u[n%10];
+}
+function autoLetra(){
+  const val=parseFloat(document.getElementById('f_sueldo_diario').value)||0;
+  if(!val)return;
+  const ent=Math.floor(val),dec=Math.round((val-ent)*100);
+  document.getElementById('f_sueldo_letra').value=numToWords(ent)+' PESOS '+String(dec).padStart(2,'0')+'/100 M.N';
+}
+function showToast(msg){
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:24px;right:24px;background:#111;color:#fff;padding:12px 20px;border-radius:8px;font-size:.82rem;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+  t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);
+}
+
+// ── CONTRACT RENDER ──
+function renderContract(){
+  const e=currentEmp; if(!e) return;
+  const g=e.genero==='M'?'M':'F';
+  const T=g==='F'?'LA TRABAJADORA':'EL TRABAJADOR';
+  const t_la=g==='F'?'la':'el';
+  const C_T=g==='F'?'trabajadora':'trabajador';
+  const contratado_a=g==='F'?'contratada':'contratado';
+  const obligado_a=g==='F'?'obligada':'obligado';
+  const autorizado_a=g==='F'?'autorizada':'autorizado';
+  const capacitado_a=g==='F'?'capacitada':'capacitado';
+  const adiestrado_a=g==='F'?'adiestrada':'adiestrado';
+  const tipoMap={TIEMPO_DETERMINADO:'POR TIEMPO DETERMINADO',OBRA_DETERMINADA:'POR OBRA DETERMINADA',PRUEBA:'A PRUEBA'};
+  const tipo=tipoMap[contractType]||'POR TIEMPO DETERMINADO';
+  const nombre=(e.nombre||'').toUpperCase();
+  const puesto=(e.puesto||'').toUpperCase();
+  const lugar=e.lugar_trabajo||'';
+  const ciudad=e.ciudad||'Mérida, Yucatán, México';
+  const cp=e.cp||'';
+  const funciones=e.funciones||'';
+  const inicio=e.inicio_contrato||'';
+  const termino=e.termino_contrato||'';
+  const ciclo=e.ciclo||'2026-2027';
+  const sueldo=(e.sueldo_diario||0).toLocaleString('es-MX',{minimumFractionDigits:2});
+  const letra=e.sueldo_diario_letra||'';
+  const descanso=e.dia_descanso||'Sábados y Domingos';
+  const beneficiario=(e.beneficiario||'').toUpperCase();
+  const firma=e.fecha_firma||'';
+  const horasN=parseInt(e.jornada)||40;
+  const horas=numToWords(horasN);
+  const diasSemana=e.dias_semana||'Lunes a Viernes';
+  const no=e.no||'';
+
+  let tercera='';
+  if(contractType==='TIEMPO_DETERMINADO'){
+    tercera=`<strong>TERCERA.-</strong> Este contrato se celebra por tiempo determinado para la prestación de servicios durante el Ciclo Escolar <span data-editable>${ciclo}</span> del COLEGIO YUCATÁN, comprendiendo el periodo del día <span data-editable>${inicio}</span> y concluirá el día <span data-editable>${termino}</span>. ${T} se desempeñará en el puesto de <span data-editable>${puesto}</span> teniendo en sus funciones: <span data-editable>${funciones}</span>.`;
+  } else if(contractType==='OBRA_DETERMINADA'){
+    tercera=`<strong>TERCERA.-</strong> Este contrato se celebra por obra determinada, siendo el objeto del mismo la prestación de servicios de <span data-editable>${puesto}</span> durante el desarrollo de las actividades académicas del Ciclo Escolar <span data-editable>${ciclo}</span>. La relación laboral concluirá una vez concluida la obra o servicio para la que fue <span data-editable>${contratado_a}</span>, en ningún caso más allá del <span data-editable>${termino}</span>. ${T} tendrá en sus funciones: <span data-editable>${funciones}</span>.`;
+  } else {
+    tercera=`<strong>TERCERA.-</strong> Este contrato se celebra a prueba por un periodo de treinta días naturales a partir del día <span data-editable>${inicio}</span>, con la finalidad de verificar que ${T} cumple con los requisitos y conocimientos necesarios para el puesto de <span data-editable>${puesto}</span>. Transcurrido dicho período, si el resultado es satisfactorio, la relación laboral se confirmará. ${T} tendrá en sus funciones: <span data-editable>${funciones}</span>.`;
+  }
+
+  document.getElementById('contractPage').innerHTML=`
+    <div class="c-no">Contrato No. ${no} · Ciclo ${ciclo}</div>
+    <div class="c-header">
+      <div class="c-title">CONTRATO INDIVIDUAL DE TRABAJO</div>
+      <div class="c-subtitle">${tipo}</div>
+    </div>
+    <div class="c-body">
+      <p class="c-intro">CONTRATO INDIVIDUAL DE TRABAJO <span data-editable>${tipo}</span> QUE CELEBRAN, POR UNA PARTE, LA SOCIEDAD DENOMINADA "COLEGIO YUCATÁN" SOCIEDAD CIVIL PARTICULAR, REPRESENTADA EN ESTE ACTO POR EL SEÑOR SERGIO FERNANDO ACOSTA VALENCIA, A QUIEN EN LO SUCESIVO SE LE DENOMINARÁ "EL PATRÓN" Y POR LA OTRA, C. <span data-editable>${nombre}</span>, A QUIEN EN LO SUCESIVO SE LE DENOMINARÁ "<span data-editable>${T}</span>" MISMOS QUE SUJETAN AL TENOR DE LAS SIGUIENTES DECLARACIONES Y CLÁUSULAS:</p>
+      <p class="c-section">DECLARACIONES:</p>
+      <p><strong>PRIMERA.- "EL PATRÓN"</strong></p>
+      <p>a) Que es una Sociedad Civil legalmente constituida con capacidad jurídica para celebrar el presente contrato.</p>
+      <p>b) Que su objeto social comprende la impartición de educación en todos sus niveles y modalidades.</p>
+      <p>c) Que para el cumplimiento de sus actividades requiere los servicios de ${T}.</p>
+      <p><strong>SEGUNDA.- "${T}" declara:</strong></p>
+      <p>a) Ser de nacionalidad mexicana, con fecha de nacimiento <span data-editable>${e.fecha_nac_letra||''}</span>, estado civil <span data-editable>${e.estado_civil||''}</span>, con CURP <span data-editable>${e.curp||''}</span>.</p>
+      <p>b) Tener su domicilio en el número <span data-editable>${e.domicilio||''}</span>, de la ciudad de <span data-editable>${ciudad}</span>, C.P. <span data-editable>${cp}</span>.</p>
+      <p>c) Tener la capacidad, conocimientos y aptitudes necesarias para el puesto para el que es <span data-editable>${contratado_a}</span>.</p>
+      <p>En consecuencia, ambas partes aceptan celebrar el presente contrato <span data-editable>${tipo}</span> de acuerdo al artículo 35 de la Ley Federal del Trabajo.</p>
+      <p class="c-section">CLÁUSULAS:</p>
+      <p><strong>PRIMERA.-</strong> ${T} se obliga a prestar al patrón sus servicios personales como <span data-editable>${puesto}</span> en el predio marcado con el número <span data-editable>${lugar}</span>, de esta ciudad de <span data-editable>${ciudad}</span>, C.P. <span data-editable>${cp}</span>; o bien en los lugares que "EL PATRÓN" le señale cuando las actividades así lo demanden.</p>
+      <p><strong>SEGUNDA.-</strong> ${T} se obliga a prestar sus servicios con la intensidad y esmero apropiados, en la forma y condiciones que "EL PATRÓN" le indique, ejecutando todas las labores inherentes al puesto y aquellas actividades complementarias relacionadas razonablemente con su naturaleza.</p>
+      <p>${tercera}</p>
+      <p><strong>CUARTA.-</strong> El presente Contrato obliga a lo expresamente pactado conforme a las disposiciones contenidas en el artículo 31 de la Ley Federal del Trabajo, y la duración del mismo será la señalada en la cláusula tercera.</p>
+      <p><strong>QUINTA.-</strong> "EL PATRÓN" queda facultado para cambiar los sistemas de trabajo y organización de las labores y en consecuencia, ${T} está <span data-editable>${obligado_a}</span> a obedecer cualquier orden relacionada con los nuevos sistemas o la nueva organización, sin afectar sus derechos laborales, salario o condiciones esenciales de trabajo.</p>
+      <p><strong>SEXTA.-</strong> La jornada ordinaria de trabajo será de <span data-editable>${horas}</span> (<span data-editable>${horasN}</span>) horas semanales, distribuidas de <span data-editable>${diasSemana}</span>. Las reuniones académicas, juntas con padres de familia, consejos técnicos, capacitaciones, ceremonias y festivales programados formarán parte de las funciones propias del puesto.</p>
+      <p>${T} autoriza a "EL PATRÓN" para cambiar su horario de trabajo, el cual nunca podrá exceder de las jornadas máximas legales establecidas en el artículo 61 de la Ley Federal del Trabajo.</p>
+      <p><strong>SÉPTIMA.-</strong> ${T} no podrá laborar más tiempo del señalado en la jornada legal. Para laborar tiempo extra deberá recabar permiso por escrito de su jefe inmediato superior, sin cuyo requisito no se cubrirá importe alguno de jornada extraordinaria.</p>
+      <p><strong>OCTAVA.-</strong> Como remuneración por sus servicios, el salario convenido es la cantidad diaria de $<span data-editable>${sueldo}</span> (<span data-editable>${letra}</span>), cuyo pago será quincenal por quincena vencida, previa firma del recibo de nómina. Dicho salario incluye la parte proporcional de días festivos, vacaciones y prima vacacional.</p>
+      <p><strong>NOVENA.-</strong> "EL PATRÓN" se obliga a otorgar recibo por la totalidad de los salarios devengados. Si ${T} tuviese alguna aclaración sobre sus salarios deberá hacerlo en el momento de recibirlos.</p>
+      <p><strong>DÉCIMA.-</strong> Los días de descanso semanal serán los <span data-editable>${descanso}</span> de cada semana, causando salario de acuerdo con el Art. 69 de la Ley Federal del Trabajo.</p>
+      <p><strong>UNDÉCIMA.-</strong> ${T} tendrá como días de descanso obligatorio los establecidos en el artículo 74 de la Ley Federal del Trabajo, percibiendo su salario íntegro en dichos días.</p>
+      <p><strong>DUODÉCIMA.-</strong> ${T} disfrutará de vacaciones conforme a los artículos 76 y demás aplicables de la Ley Federal del Trabajo vigente.</p>
+      <p><strong>DÉCIMA TERCERA.-</strong> ${T} acepta someterse a los exámenes médicos periódicos que establezca "EL PATRÓN" en términos del artículo 134 Fracción X de la Ley Federal del Trabajo.</p>
+      <p><strong>DÉCIMA CUARTA.-</strong> "EL PATRÓN" inscribirá oportunamente a ${T} ante el Instituto Mexicano del Seguro Social, realizando los descuentos necesarios para cubrir la cuota obrera conforme a la Ley del Seguro Social.</p>
+      <p><strong>DÉCIMA QUINTA.-</strong> ${T} acepta someterse a los procesos de evaluación de desempeño académico, pedagógico, administrativo y disciplinario que establezca "EL PATRÓN".</p>
+      <p><strong>DÉCIMA SEXTA.-</strong> ${T} será <span data-editable>${capacitado_a}</span> o <span data-editable>${adiestrado_a}</span> en su trabajo conforme a los planes y programas de capacitación y adiestramiento establecidos por "EL PATRÓN".</p>
+      <p><strong>DÉCIMA SÉPTIMA.-</strong> ${T} deberá dar fiel cumplimiento a las disposiciones establecidas en el artículo 134 de la Ley Federal del Trabajo.</p>
+      <p><strong>DÉCIMA OCTAVA.-</strong> ${T} se obliga a acatar las disposiciones del Reglamento Interior de Trabajo, los protocolos de la NOM-035, y las disposiciones de carácter académico y administrativo de "EL PATRÓN".</p>
+      <p><strong>DÉCIMA NOVENA.-</strong> Son causas de rescisión de contrato los actos mencionados en el artículo 47 de la Ley Federal del Trabajo. Son obligaciones de los trabajadores las establecidas en el artículo 134 de la LFT, quedando prohibidos los comportamientos señalados en el artículo 135 de la LFT.</p>
+      <p><strong>VIGÉSIMA.-</strong> ${T} se obliga a guardar absoluta confidencialidad respecto de toda información a la que tenga acceso durante la vigencia de la relación laboral y aun después de concluida la misma.</p>
+      <p><strong>VIGÉSIMA PRIMERA.-</strong> Cualquier proyecto, proceso o mejora desarrollado por ${T} con motivo de sus servicios deberá ponerse en conocimiento de "EL PATRÓN" de forma inmediata, cediendo la totalidad de los derechos de propiedad industrial o intelectual correspondientes.</p>
+      <p><strong>VIGÉSIMA SEGUNDA.-</strong> Todos los materiales, documentos, planeaciones, programas educativos, evaluaciones, exámenes, presentaciones, manuales y herramientas desarrolladas con motivo de sus servicios son propiedad exclusiva de "EL PATRÓN".</p>
+      <p><strong>VIGÉSIMA TERCERA.-</strong> ${T} reconoce que toda información de alumnos actuales y potenciales es propiedad única y exclusiva de la empresa.</p>
+      <p><strong>VIGÉSIMA CUARTA.-</strong> ${T} se obliga a informar a la Administración de "EL PATRÓN" en un término no mayor de tres días, cualquier cambio de domicilio, número telefónico u otros datos personales.</p>
+      <p><strong>VIGÉSIMA QUINTA.-</strong> ${T} se obliga a prestar sus servicios con capacidad, eficiencia, higiene, honradez, probidad, amabilidad y buen trato hacia los representantes de "EL PATRÓN", compañeros, alumnos, padres de familia y demás personas que acudan al centro de trabajo.</p>
+      <p><strong>VIGÉSIMA SEXTA.-</strong> ${T} reconoce que todos los documentos, materiales e instrumentos proporcionados para el desempeño de sus labores son propiedad de "EL PATRÓN", obligándose a conservarlos en buen estado y a entregarlos al término de la relación laboral.</p>
+      <p><strong>VIGÉSIMA SÉPTIMA.-</strong> Al vencimiento del plazo señalado en la cláusula tercera, concluirá la vigencia de la relación laboral. La celebración de un nuevo contrato para un ciclo escolar posterior requerirá acuerdo expreso y por escrito entre las partes.</p>
+      <p><strong>VIGÉSIMA OCTAVA.-</strong> Al término del contrato, ${T} se obliga a devolver todos los materiales y documentos proporcionados y a no divulgar información confidencial obtenida durante la relación laboral.</p>
+      <p><strong>VIGÉSIMA NOVENA.-</strong> La designación de beneficiarios a que refiere el artículo 501 de la Ley Federal del Trabajo, para el pago de salarios y prestaciones devengadas y no cobradas a la muerte de ${t_la} ${C_T}, nombrando para tal efecto a <span data-editable>${beneficiario}</span>.</p>
+      <p><strong>TRIGÉSIMA.-</strong> En cumplimiento a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares, ${T} otorga su consentimiento respecto al tratamiento de sus datos personales para los fines laborales propios de la relación de trabajo.</p>
+      <p><strong>TRIGÉSIMA PRIMERA.-</strong> Para todo conflicto o interpretación con motivo de la ejecución del presente Contrato, ambas partes se someterán a la jurisdicción del Centro de Conciliación Laboral de la ciudad de Mérida, Yucatán.</p>
+      <p class="c-section">PERSONALIDAD</p>
+      <p><strong>ÚNICA.-</strong> El señor Sergio Fernando Acosta Valencia acredita su personalidad con la copia certificada de la escritura pública número ocho de fecha seis de enero del año dos mil quince, pasada ante la fe del maestro en derecho Carlos Alberto Evia Salazar, Notario Público número dieciséis del Estado con residencia en la ciudad de Mérida, Yucatán.</p>
+      <p>Que el presente contrato fue leído por ambas partes y una vez enteradas de su contenido y alcance, lo firman por triplicado en la <span data-editable>${ciudad}</span>, el día <span data-editable>${firma}</span>.</p>
+    </div>
+    <div class="c-signature">
+      <div class="c-sign-block">
+        <div class="c-sign-line"></div>
+        <div class="c-sign-name">Sergio Fernando Acosta Valencia</div>
+        <div class="c-sign-role">EL PATRÓN · Colegio Yucatán S.C.P.</div>
+      </div>
+      <div class="c-sign-block">
+        <div class="c-sign-line"></div>
+        <div class="c-sign-name">${titleCase(e.nombre||'')}</div>
+        <div class="c-sign-role">${T}</div>
+      </div>
+    </div>`;
+
+  document.getElementById('contractPage').classList.toggle('edit-mode',editMode);
+  document.querySelectorAll('#contractPage [data-editable]').forEach(el=>el.contentEditable=editMode?'true':'false');
+}
+
+init();
+</script>
+</body>
+</html>
