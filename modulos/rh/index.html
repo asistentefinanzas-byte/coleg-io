@@ -253,22 +253,41 @@ html,body{height:100%;background:var(--bg);color:var(--ink-1);font-family:'Inter
 
 /* PRINT */
 @media print{
-  .topbar,.sidebar,.list-panel,.rp-tabs,.contract-bar,.form-footer{display:none!important;}
-  .app{display:block;height:auto;}
-  .main,.right-panel,.contract-wrap{display:block;overflow:visible;height:auto;}
-  .contract-body{padding:0;background:#fff;overflow:visible;}
-  .contract-page{
-    box-shadow:none;
-    width:100%;
-    min-height:auto;
-    margin:0;
-    padding:15mm 18mm 20mm;
-  }
-  .c-body{font-size:9pt;line-height:1.5;}
-  .c-body p{margin-bottom:5px;text-align:justify;}
-  .c-section{page-break-after:avoid;}
-  .c-signature{margin-top:16mm;page-break-inside:avoid;}
-  @page{size:A4;margin:0;}
+  /* Ocultar TODO el chrome del ERP */
+  .topbar,.sidebar,.menu-btn,.sidebar-backdrop,
+  .back-btn,#backBtn,.view-tabs,.vtab,
+  .list-panel,.rp-tabs,.rp-tab-actions,
+  .contract-bar,.form-footer,
+  #viewTarjetas,.sidebar-footer,.sidebar-sep,
+  .conn-badge,.breadcrumb,.logo-sep,.logo-region{display:none!important;}
+
+  /* Resetear layout */
+  *{overflow:visible!important;}
+  html,body{height:auto!important;overflow:visible!important;background:#fff!important;}
+  .app{display:block!important;height:auto!important;}
+  .main{display:block!important;height:auto!important;padding:0!important;background:#fff!important;}
+  .detail-view{display:block!important;height:auto!important;}
+  .right-panel{display:block!important;height:auto!important;}
+  #rpContent{display:block!important;height:auto!important;}
+  #rpEmpty{display:none!important;}
+  #tabDatos{display:none!important;}
+  #tabContrato{display:block!important;height:auto!important;}
+  .contract-wrap{display:block!important;height:auto!important;}
+
+  /* Contrato ocupa el papel */
+  .contract-body{display:block!important;padding:0!important;background:#fff!important;}
+  .contract-page{display:block!important;box-shadow:none!important;border:none!important;width:100%!important;min-height:auto!important;margin:0!important;padding:0!important;}
+
+  /* Tipografía */
+  .c-header{margin-bottom:10px;}
+  .c-title{font-size:11pt;font-weight:700;}
+  .c-body{font-size:9pt;line-height:1.5;color:#000;}
+  .c-body p{margin-bottom:5px;text-align:justify;orphans:3;widows:3;}
+  .c-section{font-size:8.5pt;font-weight:700;margin-top:10px;margin-bottom:3px;page-break-after:avoid;}
+  .c-signature{margin-top:14mm;page-break-inside:avoid;display:flex!important;flex-direction:row!important;}
+
+  /* Tamaño y márgenes de la hoja */
+  @page{size:A4 portrait;margin:18mm 20mm 20mm 20mm;}
 }
 </style>
 </head>
