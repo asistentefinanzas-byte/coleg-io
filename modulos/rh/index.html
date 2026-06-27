@@ -291,9 +291,8 @@ html,body{height:100%;background:var(--bg);color:var(--ink-1);font-family:'Inter
   .c-title{font-size:11pt;font-weight:700;}
   .c-section{font-size:8.5pt;font-weight:700;margin-top:10px;margin-bottom:3px;page-break-after:avoid;}
 
-  /* Firmas al último margen sin espacio en blanco debajo */
+  /* Firmas: el margen-top lo calcula imprimirContrato() via JS con !important */
   .c-signature{
-    margin-top:auto!important;
     padding-top:10mm;
     page-break-inside:avoid;
     display:flex!important;flex-direction:row!important;
@@ -375,6 +374,13 @@ html,body{height:100%;background:var(--bg);color:var(--ink-1);font-family:'Inter
         <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#8a6a20" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
       </div>
       <span class="nav-label">Cobranza</span>
+    </a>
+    <a class="nav-item" href="../inventario/index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--sage-bg);border-color:var(--sage)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#3a7a55" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      </div>
+      <span class="nav-label">Inventario</span>
     </a>
     <a class="nav-item active" href="index.html">
       <div class="nav-dot"></div>
@@ -936,29 +942,39 @@ function imprimirContrato(){
   const sig=page.querySelector('.c-signature');
 
   // Resetear margen previo
-  sig.style.marginTop='';
+  sig.style.removeProperty('margin-top');
 
-  // Altura de la zona imprimible en A4:
-  // 297mm hoja - 18mm margen sup - 22mm margen inf = 257mm
-  // 1mm = 96/25.4 px en CSS
+  // Forzar ancho A4 imprimible (170mm) para medir igual que en impresión
   const mmPx=96/25.4;
+  const printW=Math.round(170*mmPx); // ~643px
+  const prevW=page.style.width;
+  const prevMax=page.style.maxWidth;
+  page.style.width=printW+'px';
+  page.style.maxWidth=printW+'px';
+  page.offsetHeight; // forzar reflow
+
+  // Altura imprimible A4: 297mm - 18mm sup - 22mm inf = 257mm
   const pageH=Math.round(257*mmPx); // ~971px por página
 
-  // Medimos el contenido SIN la firma
   const totalH=page.scrollHeight;
   const sigH=sig.offsetHeight;
   const contentH=totalH-sigH;
 
-  // Cuánto de la última página está ocupado por el contenido
+  // Cuánto ocupa el contenido en la última página
   const usedOnLastPage=contentH%pageH||pageH;
-  // Espacio libre restante en esa página
   const libre=pageH-usedOnLastPage;
 
-  // Si caben las firmas en esa página, las empujamos al fondo
   if(libre>=sigH+10){
-    sig.style.marginTop=(libre-sigH)+'px';
+    // Caben en esta página: empujar al fondo
+    sig.style.setProperty('margin-top',(libre-sigH)+'px','important');
+  } else {
+    // No caben: irán a la siguiente página empujadas al fondo de ella
+    sig.style.setProperty('margin-top',(libre+pageH-sigH)+'px','important');
   }
-  // Si no caben, van a la siguiente página (comportamiento natural)
+
+  // Restaurar ancho original
+  page.style.width=prevW;
+  page.style.maxWidth=prevMax;
 
   const titulo=document.title;
   document.title='';
@@ -966,7 +982,7 @@ function imprimirContrato(){
     window.print();
     setTimeout(()=>{
       document.title=titulo;
-      sig.style.marginTop='';
+      sig.style.removeProperty('margin-top');
     },2000);
   });
 }

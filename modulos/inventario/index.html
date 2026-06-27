@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventario — Coleg.IO</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f9f7f4;--surface:#fff;--surface-2:#f4f1ec;
+  --border:#e8e3db;--border-2:#d6cfc4;
+  --ink-1:#1a1814;--ink-2:#5a5650;--ink-3:#9c9690;--ink-4:#c4bfb8;
+  --sage:#c8d5c0;--sage-bg:#eef2eb;
+  --sand:#e0d4b8;--sand-bg:#f7f2e8;
+  --sky:#b8cfe0;--sky-bg:#eaf2f8;
+  --lav:#d0c8e8;--lav-bg:#f2eff8;
+  --rose:#e8c4c0;--rose-bg:#faeeed;
+  --ok:#2F7D4F;--ok-bg:#E5F3EA;
+  --warn:#B6791C;--warn-bg:#FBF0DD;
+  --bad:#B23B3B;--bad-bg:#FAE7E5;
+  --teal:#2E6F95;--teal-bg:#E5F0F6;
+  --sidebar-w:220px;--topbar-h:56px;--r:10px;
+}
+html,body{height:100%;background:var(--bg);color:var(--ink-1);font-family:'Inter',sans-serif;font-size:13.5px;-webkit-font-smoothing:antialiased;overflow:hidden;}
+.mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;}
+.app{display:grid;grid-template-columns:var(--sidebar-w) 1fr;grid-template-rows:var(--topbar-h) 1fr;height:100vh;}
+
+/* topbar */
+.topbar{grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:0 28px;background:var(--surface);border-bottom:1px solid var(--border);}
+.menu-btn{display:none;background:none;border:none;color:var(--ink-2);cursor:pointer;padding:4px;}
+.logo{font-family:'Playfair Display',serif;font-size:17px;font-weight:500;text-decoration:none;color:var(--ink-1);flex-shrink:0;}
+.logo em{font-style:normal;color:var(--ink-3);}
+.logo-sep{width:1px;height:16px;background:var(--border-2);}
+.logo-region{font-size:11px;color:var(--ink-3);}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);}
+.breadcrumb a{color:var(--ink-3);text-decoration:none;}.breadcrumb a:hover{color:var(--ink-1);}
+.breadcrumb span{color:var(--ink-4);}
+.conn-badge{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-4);margin-left:auto;flex-shrink:0;}
+.conn-dot{width:6px;height:6px;border-radius:50%;background:var(--sand);}
+.conn-dot.ok{background:var(--sage);}.conn-dot.err{background:var(--rose);}
+
+/* sidebar */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 12px;overflow-y:auto;}
+.sidebar::-webkit-scrollbar{width:0;}
+.nav-group{margin-bottom:20px;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:8px;cursor:pointer;color:var(--ink-3);text-decoration:none;transition:background .15s,color .15s;position:relative;}
+.nav-item:hover{background:var(--surface-2);color:var(--ink-2);}
+.nav-item.active{background:var(--surface-2);color:var(--ink-1);}
+.nav-item.active .nav-dot{opacity:1;}
+.nav-dot{position:absolute;left:0;top:50%;transform:translateY(-50%);width:2px;height:16px;border-radius:2px;background:var(--ink-1);opacity:0;}
+.nav-ico{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid transparent;}
+.nav-label{font-size:13px;font-weight:500;flex:1;}
+.sidebar-sep{height:1px;background:var(--border);margin:8px 4px 14px;}
+.nav-group-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--ink-4);text-transform:uppercase;padding:0 10px;margin-bottom:6px;}
+.view-tabs{display:flex;flex-direction:column;gap:2px;margin:0 0 20px;}
+.vtab{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;font:inherit;font-size:12.5px;font-weight:500;cursor:pointer;color:var(--ink-3);background:none;border:none;text-align:left;}
+.vtab:hover{background:var(--surface-2);color:var(--ink-2);}
+.vtab.active{background:var(--surface-2);color:var(--ink-1);}
+.sidebar-footer{margin-top:auto;}
+.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;}
+.user-av{width:28px;height:28px;border-radius:7px;background:var(--lav);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#5a4e8a;flex-shrink:0;}
+.user-name{font-size:12.5px;font-weight:500;}.user-role{font-size:11px;color:var(--ink-4);}
+
+.main{overflow:hidden;display:flex;flex-direction:column;background:var(--bg);}
+.page-hd{padding:20px 28px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.page-hd h1{font-size:20px;font-weight:600;}
+.page-hd p{font-size:12.5px;color:var(--ink-3);margin-top:2px;}
+.btn{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12.5px;font-weight:500;padding:7px 13px;border-radius:8px;border:1px solid var(--border-2);background:var(--surface);color:var(--ink-1);cursor:pointer;transition:background .15s;}
+.btn:hover{background:var(--surface-2);}
+.btn-primary{background:var(--ink-1);color:#fff;border-color:var(--ink-1);}
+.btn-primary:hover{background:#000;}
+.btn-danger{background:var(--bad-bg);color:var(--bad);border-color:var(--rose);}
+.btn-danger:hover{background:#f5dada;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn-group{display:flex;gap:8px;}
+
+/* KPIs */
+.kpis{display:flex;gap:12px;flex-wrap:wrap;padding:16px 28px 4px;}
+.kpi{flex:1;min-width:130px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;}
+.kpi .v{font-size:22px;font-weight:600;}
+.kpi .l{font-size:11px;color:var(--ink-3);margin-top:2px;}
+.kpi.prod .v{color:var(--warn);}
+
+/* filters */
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:14px 28px 8px;}
+.filters select,.filters input{font:inherit;font-size:12.5px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink-1);}
+.filters input.search{min-width:200px;}
+
+/* tabla */
+.scroll{flex:1;overflow:auto;padding:6px 28px 28px;}
+table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+table.tbl th,table.tbl td{padding:7px 12px;border-top:1px solid var(--border);text-align:right;}
+table.tbl th:first-child,table.tbl td:first-child{text-align:left;}
+table.tbl th:nth-child(2),table.tbl td:nth-child(2){text-align:left;}
+table.tbl thead th{background:var(--surface-2);font-weight:500;color:var(--ink-2);font-size:11px;text-transform:uppercase;letter-spacing:.5px;position:sticky;top:0;z-index:1;}
+table.tbl tbody tr:hover td{background:var(--surface-2);}
+.cat-row td{background:#fbfaf8;font-weight:600;color:var(--ink-2);font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;}
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:10.5px;font-weight:600;}
+.tag.uniforme{background:var(--sky-bg);color:var(--teal);}
+.tag.insumo{background:var(--sand-bg);color:var(--warn);}
+.tag.recurso{background:var(--lav-bg);color:#5a4e8a;}
+.tag.punteo{background:var(--rose-bg);color:var(--bad);}
+.z{color:var(--ink-4);}
+.pr{color:var(--warn);font-weight:500;}
+.row-actions{display:flex;gap:4px;justify-content:flex-end;}
+.row-btn{padding:3px 8px;font:inherit;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--ink-2);cursor:pointer;}
+.row-btn:hover{background:var(--surface-2);}
+.row-btn.del{color:var(--bad);border-color:var(--rose);}
+.row-btn.del:hover{background:var(--bad-bg);}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,24,20,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.hidden{display:none;}
+.modal{background:var(--surface);border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.modal-hd{padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between;}
+.modal-hd h2{font-size:16px;font-weight:600;}
+.modal-close{background:none;border:none;color:var(--ink-3);cursor:pointer;font-size:20px;line-height:1;padding:2px 6px;}
+.modal-close:hover{color:var(--ink-1);}
+.modal-body{padding:20px 24px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--ink-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;font:inherit;font-size:13px;padding:8px 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink-1);}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--teal);}
+.field.row{display:flex;gap:12px;}.field.row>div{flex:1;}
+.modal-footer{padding:0 24px 20px;display:flex;gap:8px;justify-content:flex-end;}
+.field-hint{font-size:11px;color:var(--ink-3);margin-top:4px;}
+
+/* conteo */
+.count-setup{padding:18px 28px;max-width:760px;}
+.count-setup h2{font-size:14px;margin-bottom:4px;}
+.count-setup .hint{font-size:12px;color:var(--ink-3);margin-bottom:14px;}
+.area-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+.area-chip{padding:9px 16px;border-radius:10px;border:1px solid var(--border-2);background:var(--surface);cursor:pointer;font-weight:500;font-size:13px;transition:all .15s;}
+.area-chip:hover{background:var(--surface-2);}
+.area-chip.sel{background:var(--ink-1);color:#fff;border-color:var(--ink-1);}
+.area-chip small{display:block;font-size:10.5px;color:var(--ink-4);font-weight:400;margin-top:1px;}
+.area-chip.sel small{color:#cfc9c0;}
+
+.progress-bar{height:6px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin:0 28px;}
+.progress-bar>div{height:100%;background:var(--ok);transition:width .3s;}
+.count-toolbar{display:flex;align-items:center;gap:14px;padding:12px 28px;flex-wrap:wrap;}
+.count-toolbar .summary{font-size:12px;color:var(--ink-3);}
+.count-toolbar .summary b{color:var(--ink-1);}
+
+.count-list{flex:1;overflow:auto;padding:4px 28px 28px;}
+.ci-cat{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-3);margin:16px 0 8px;}
+.ci{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:7px;}
+.ci-info{flex:1;min-width:0;}
+.ci-name{font-weight:500;font-size:13px;}
+.ci-sub{font-size:11.5px;color:var(--ink-3);margin-top:1px;}
+.ci-sys{font-size:11.5px;color:var(--ink-3);white-space:nowrap;}
+.ci-sys b{color:var(--ink-1);font-size:14px;}
+.ci-input{width:80px;text-align:center;font:inherit;font-size:15px;font-weight:600;padding:7px;border:1.5px solid var(--border-2);border-radius:8px;background:var(--surface);color:var(--ink-1);}
+.ci-input:focus{outline:none;border-color:var(--teal);}
+.ci-diff{width:74px;text-align:center;font-size:11px;font-weight:700;padding:4px 6px;border-radius:7px;white-space:nowrap;}
+.ci-diff.ok{background:var(--ok-bg);color:var(--ok);}
+.ci-diff.warn{background:var(--bad-bg);color:var(--bad);}
+.ci-diff.empty{background:var(--surface-2);color:var(--ink-4);}
+.punteo{display:flex;align-items:center;gap:8px;}
+.punteo button{width:34px;height:34px;border-radius:8px;border:1px solid var(--border-2);background:var(--surface);font-size:18px;font-weight:600;cursor:pointer;color:var(--ink-1);line-height:1;}
+.punteo button:hover{background:var(--surface-2);}
+.punteo .val{min-width:34px;text-align:center;font-size:17px;font-weight:700;}
+
+.loading{padding:40px;text-align:center;color:var(--ink-3);font-size:13px;}
+.empty-state{padding:60px 28px;text-align:center;color:var(--ink-3);}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink-1);color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.2);transition:transform .3s;z-index:300;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.bad{background:var(--bad);}
+
+.sidebar-backdrop{display:none;position:fixed;inset:0;z-index:40;background:rgba(26,24,20,.45);}
+.sidebar-backdrop.show{display:block;}
+@media(max-width:860px){
+  .menu-btn{display:block;}
+  .app{grid-template-columns:1fr;}
+  .logo-sep,.logo-region,.breadcrumb{display:none;}
+  .sidebar{position:fixed;left:-260px;top:0;bottom:0;width:240px;z-index:50;transition:left .25s;padding-top:calc(var(--topbar-h) + 12px);}
+  .sidebar.open{left:0;box-shadow:4px 0 24px rgba(0,0,0,.18);}
+  .main{overflow-y:auto;}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+<!-- TOPBAR -->
+<header class="topbar">
+  <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menú">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <a href="../../index.html" class="logo">Coleg<em>.IO</em></a>
+  <div class="logo-sep"></div>
+  <span class="logo-region">Yucatán</span>
+  <div class="breadcrumb"><span>›</span><a href="../../index.html">Inicio</a><span>›</span><span style="color:var(--ink-2)">Inventario</span></div>
+  <div class="conn-badge"><div class="conn-dot" id="connDot"></div><span id="connLabel">Conectando…</span></div>
+</header>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="nav-group">
+    <a class="nav-item" href="../../index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--surface-2);border-color:var(--border)"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="var(--ink-2)" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      <span class="nav-label">Inicio</span>
+    </a>
+    <a class="nav-item" href="../conciliacion/index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--sky-bg);border-color:var(--sky)"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#3a7ab0" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+      <span class="nav-label">Conciliación</span>
+    </a>
+    <a class="nav-item" href="../cobranza/index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--sand-bg);border-color:var(--sand)"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#8a6a20" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+      <span class="nav-label">Cobranza</span>
+    </a>
+    <a class="nav-item active" href="index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--sage-bg);border-color:var(--sage)"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#3a7a55" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+      <span class="nav-label">Inventario</span>
+    </a>
+    <a class="nav-item" href="../reportes/index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--lav-bg);border-color:var(--lav)"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#5a4e8a" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <span class="nav-label">Reportes</span>
+    </a>
+  </div>
+  <div class="sidebar-sep"></div>
+  <div class="nav-group-label">Vista</div>
+  <div class="view-tabs">
+    <button class="vtab active" data-view="consulta" onclick="switchView('consulta',this)">
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      Consulta
+    </button>
+    <button class="vtab" data-view="conteo" onclick="switchView('conteo',this)">
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Conteo físico
+    </button>
+  </div>
+  <div class="sidebar-footer">
+    <div class="sidebar-sep"></div>
+    <div class="user-row"><div class="user-av">CY</div><div><div class="user-name">Administrador</div><div class="user-role">Colegio Yucatán</div></div></div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- ░░ VISTA CONSULTA ░░ -->
+  <div id="view-consulta" style="display:flex;flex-direction:column;overflow:hidden;flex:1;">
+    <div class="page-hd">
+      <div><h1>Inventario</h1><p>Existencias por área — uniformes, insumos y recursos</p></div>
+      <div class="btn-group">
+        <button class="btn" onclick="cargar()"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4"/></svg>Actualizar</button>
+        <button class="btn btn-primary" onclick="abrirModal()"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar ítem</button>
+      </div>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <div class="filters">
+      <select id="f-tipo" onchange="renderConsulta()"><option value="">Todos los tipos</option><option value="uniforme">Uniformes</option><option value="insumo">Insumos</option><option value="recurso">Recursos</option></select>
+      <select id="f-area" onchange="renderConsulta()"><option value="">Todas las áreas</option></select>
+      <select id="f-cat" onchange="renderConsulta()"><option value="">Todas las categorías</option></select>
+      <input class="search" id="f-q" placeholder="Buscar producto…" oninput="renderConsulta()">
+    </div>
+    <div class="scroll" id="consulta-body"><div class="loading">Cargando inventario…</div></div>
+  </div>
+
+  <!-- ░░ VISTA CONTEO ░░ -->
+  <div id="view-conteo" style="display:none;flex-direction:column;overflow:hidden;flex:1;">
+    <div id="conteo-setup" class="count-setup">
+      <div class="page-hd" style="padding:0 0 16px"><div><h1>Conteo físico</h1><p>Selecciona el área a contar. Verás cada producto y talla para capturar lo que hay físicamente.</p></div></div>
+      <h2>1 · ¿Qué área vas a contar?</h2>
+      <div class="hint">Cada área se cuenta por separado: área › producto › talla.</div>
+      <div class="area-chips" id="area-chips"></div>
+      <h2>2 · Filtra (opcional) y empieza</h2>
+      <div class="field row" style="margin-top:12px">
+        <div><label>Tipo</label><select id="cs-tipo"><option value="">Todos</option><option value="uniforme">Uniformes</option><option value="insumo">Insumos</option><option value="recurso">Recursos</option></select></div>
+        <div><label>Categoría</label><select id="cs-cat"><option value="">Todas</option></select></div>
+      </div>
+      <div class="field"><label>¿Quién está contando?</label><input id="cs-quien" placeholder="Nombre de quien hace el conteo"></div>
+      <button class="btn btn-primary" onclick="iniciarConteo()">Iniciar conteo →</button>
+    </div>
+    <div id="conteo-run" style="display:none;flex-direction:column;overflow:hidden;flex:1;">
+      <div class="page-hd" style="padding:16px 28px 8px">
+        <div><h1 id="run-title" style="font-size:17px"></h1><p id="run-sub"></p></div>
+        <div style="display:flex;gap:8px"><button class="btn" onclick="volverSetup()">← Cambiar área</button><button class="btn btn-primary" id="btn-guardar" onclick="guardarConteo()">Guardar conteo</button></div>
+      </div>
+      <div class="progress-bar"><div id="progress" style="width:0%"></div></div>
+      <div class="count-toolbar">
+        <div class="summary" id="count-summary"></div>
+        <label style="font-size:12px;color:var(--ink-2);margin-left:auto;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="solo-dif" onchange="renderConteoLista()"> Solo diferencias</label>
+      </div>
+      <div class="count-list" id="conteo-lista"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- MODAL AGREGAR / EDITAR -->
+<div class="modal-overlay hidden" id="modal-overlay" onclick="if(event.target===this)cerrarModal()">
+  <div class="modal">
+    <div class="modal-hd">
+      <h2 id="modal-titulo">Agregar ítem</h2>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="m-id">
+      <div class="field row">
+        <div>
+          <label>Tipo *</label>
+          <select id="m-tipo">
+            <option value="uniforme">Uniforme</option>
+            <option value="insumo">Insumo</option>
+            <option value="recurso">Recurso</option>
+          </select>
+        </div>
+        <div>
+          <label>Categoría *</label>
+          <input id="m-categoria" placeholder="Ej. FALDAS">
+        </div>
+      </div>
+      <div class="field">
+        <label>Producto *</label>
+        <input id="m-producto" placeholder="Nombre del producto">
+      </div>
+      <div class="field row">
+        <div>
+          <label>Talla / Variante</label>
+          <input id="m-talla" placeholder="Ej. 8, S, M, Cuadro grande">
+          <div class="field-hint">Dejar vacío si no aplica</div>
+        </div>
+        <div>
+          <label>Área *</label>
+          <select id="m-area">
+            <option>Punto de venta</option>
+            <option>Bodega oficina</option>
+            <option>Produccion</option>
+            <option>Venta</option>
+            <option>Bodega</option>
+          </select>
+        </div>
+      </div>
+      <div class="field row">
+        <div>
+          <label>Cantidad en sistema</label>
+          <input id="m-cantidad" type="number" min="0" placeholder="0">
+        </div>
+        <div>
+          <label>Precio unitario</label>
+          <input id="m-precio" type="number" min="0" placeholder="0">
+        </div>
+      </div>
+      <div class="field row">
+        <div>
+          <label>Proveedor</label>
+          <input id="m-proveedor" placeholder="Para items en Produccion">
+        </div>
+        <div>
+          <label>Fecha estimada entrega</label>
+          <input id="m-fecha" type="date">
+        </div>
+      </div>
+      <div class="field">
+        <label>Notas / Referencia</label>
+        <input id="m-notas" placeholder="Texto libre de referencia">
+      </div>
+      <div class="field" style="display:flex;align-items:center;gap:10px">
+        <input type="checkbox" id="m-punteo" style="width:auto">
+        <label for="m-punteo" style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer">Es inventario de punteo (tipo barra / alcohol)</label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" id="btn-modal-guardar" onclick="guardarItem()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div class="modal-overlay hidden" id="confirm-overlay">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-hd"><h2>Confirmar eliminación</h2></div>
+    <div class="modal-body">
+      <p style="font-size:13.5px;line-height:1.6">¿Eliminar <b id="confirm-nombre"></b>? Esta acción no se puede deshacer.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="cerrarConfirm()">Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirmar-del">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL='https://kqbeoymmpbnhgwyhtfiq.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxYmVveW1tcGJuaGd3eWh0ZmlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMjU1MjIsImV4cCI6MjA5NzgwMTUyMn0.dJory8gvUyWce_7ICn3LVcWW0R-iJtXS8YmJvPjzEtY';
+const{createClient}=supabase;
+const db=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+let ITEMS=[];
+let conteoState=null;
+
+const fmt=n=>n==null?'<span class="z">·</span>':(Number(n).toLocaleString('es-MX'));
+function toast(msg,bad){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(bad?' bad':'');setTimeout(()=>t.className='toast',2600);}
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebarBackdrop').classList.toggle('show');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarBackdrop').classList.remove('show');}
+function setConn(ok){const d=document.getElementById('connDot'),l=document.getElementById('connLabel');d.className='conn-dot '+(ok?'ok':'err');l.textContent=ok?'Conectado':'Sin conexión';}
+
+function switchView(v,el){
+  document.querySelectorAll('.vtab').forEach(b=>b.classList.remove('active'));
+  if(el)el.classList.add('active');
+  document.getElementById('view-consulta').style.display=v==='consulta'?'flex':'none';
+  document.getElementById('view-conteo').style.display=v==='conteo'?'flex':'none';
+  closeSidebar();
+}
+
+/* ── Carga ── */
+async function cargar(){
+  document.getElementById('consulta-body').innerHTML='<div class="loading">Cargando inventario…</div>';
+  const{data,error}=await db.from('inventario_items').select('*').eq('activo',true).order('tipo').order('categoria').order('producto').order('id');
+  if(error){setConn(false);document.getElementById('consulta-body').innerHTML='<div class="loading">Error al cargar: '+error.message+'</div>';return;}
+  setConn(true);
+  ITEMS=data||[];
+  poblarFiltros();
+  renderKpis();
+  renderConsulta();
+  renderAreaChips();
+}
+
+function poblarFiltros(){
+  const areas=[...new Set(ITEMS.map(i=>i.area))].sort();
+  const cats=[...new Set(ITEMS.map(i=>i.categoria).filter(Boolean))].sort();
+  document.getElementById('f-area').innerHTML='<option value="">Todas las áreas</option>'+areas.map(a=>`<option>${a}</option>`).join('');
+  document.getElementById('f-cat').innerHTML='<option value="">Todas las categorías</option>'+cats.map(c=>`<option>${c}</option>`).join('');
+  document.getElementById('cs-cat').innerHTML='<option value="">Todas</option>'+cats.map(c=>`<option>${c}</option>`).join('');
+}
+
+function renderKpis(){
+  const uni=ITEMS.filter(i=>i.tipo==='uniforme');
+  const tt=uni.reduce((a,i)=>a+(Number(i.cantidad_sistema)||0),0);
+  const prod=uni.filter(i=>i.area==='Produccion').reduce((a,i)=>a+(Number(i.cantidad_sistema)||0),0);
+  const bod=uni.filter(i=>i.area==='Bodega oficina').reduce((a,i)=>a+(Number(i.cantidad_sistema)||0),0);
+  const pv=uni.filter(i=>i.area==='Punto de venta').reduce((a,i)=>a+(Number(i.cantidad_sistema)||0),0);
+  const np=new Set(uni.map(i=>i.producto)).size;
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi"><div class="v">${np}</div><div class="l">Productos (uniformes)</div></div>
+    <div class="kpi"><div class="v">${fmt(tt)}</div><div class="l">Piezas totales</div></div>
+    <div class="kpi prod"><div class="v">${fmt(prod)}</div><div class="l">En producción</div></div>
+    <div class="kpi"><div class="v">${fmt(bod)}</div><div class="l">En bodega</div></div>
+    <div class="kpi"><div class="v">${fmt(pv)}</div><div class="l">Punto de venta</div></div>`;
+}
+
+function renderConsulta(){
+  const tipo=document.getElementById('f-tipo').value;
+  const area=document.getElementById('f-area').value;
+  const cat=document.getElementById('f-cat').value;
+  const q=document.getElementById('f-q').value.trim().toLowerCase();
+  const rows=ITEMS.filter(i=>(!tipo||i.tipo===tipo)&&(!area||i.area===area)&&(!cat||i.categoria===cat)&&(!q||(i.producto||'').toLowerCase().includes(q)||(i.categoria||'').toLowerCase().includes(q)));
+  const body=document.getElementById('consulta-body');
+  if(!rows.length){body.innerHTML='<div class="empty-state">Sin resultados con esos filtros.</div>';return;}
+  let html='<table class="tbl"><thead><tr><th>Producto</th><th>Talla</th><th>Área</th><th>Tipo</th><th>Sistema</th><th>Precio</th><th>Notas</th><th></th></tr></thead><tbody>';
+  let lastCat=null;
+  for(const r of rows){
+    if(r.categoria!==lastCat){lastCat=r.categoria;html+=`<tr class="cat-row"><td colspan="8">${r.categoria||'—'}</td></tr>`;}
+    const tagcls=r.es_punteo?'punteo':r.tipo;
+    const enProd=r.area==='Produccion';
+    html+=`<tr>
+      <td>${r.producto}</td>
+      <td>${r.talla||'<span class="z">—</span>'}</td>
+      <td>${r.area}${enProd?' <span class="pr" title="En producción">⚙</span>':''}</td>
+      <td><span class="tag ${tagcls}">${r.es_punteo?'punteo':r.tipo}</span></td>
+      <td class="mono ${enProd?'pr':''}">${r.cantidad_sistema==null?'<span class="z">—</span>':fmt(r.cantidad_sistema)}</td>
+      <td class="mono">${r.precio?'$'+fmt(r.precio):'<span class="z">—</span>'}</td>
+      <td style="text-align:left;color:var(--ink-3);font-size:11.5px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.cantidad_texto||r.proveedor||''}</td>
+      <td><div class="row-actions">
+        <button class="row-btn" onclick="abrirModal(${r.id})">Editar</button>
+        <button class="row-btn del" onclick="confirmarEliminar(${r.id},'${(r.producto+' '+( r.talla||'')).trim().replace(/'/g,"\\'")}')">Eliminar</button>
+      </div></td>
+    </tr>`;
+  }
+  html+='</tbody></table>';
+  body.innerHTML=html;
+}
+
+/* ── MODAL CRUD ── */
+function abrirModal(id){
+  const item=id?ITEMS.find(i=>i.id===id):null;
+  document.getElementById('modal-titulo').textContent=item?'Editar ítem':'Agregar ítem';
+  document.getElementById('m-id').value=item?item.id:'';
+  document.getElementById('m-tipo').value=item?item.tipo:'uniforme';
+  document.getElementById('m-categoria').value=item?item.categoria||'':'';
+  document.getElementById('m-producto').value=item?item.producto:'';
+  document.getElementById('m-talla').value=item?item.talla||'':'';
+  document.getElementById('m-area').value=item?item.area:'Punto de venta';
+  document.getElementById('m-cantidad').value=item&&item.cantidad_sistema!=null?item.cantidad_sistema:'';
+  document.getElementById('m-precio').value=item&&item.precio?item.precio:'';
+  document.getElementById('m-proveedor').value=item?item.proveedor||'':'';
+  document.getElementById('m-fecha').value=item?item.fecha_estimada||'':'';
+  document.getElementById('m-notas').value=item?item.cantidad_texto||'':'';
+  document.getElementById('m-punteo').checked=item?!!item.es_punteo:false;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+function cerrarModal(){document.getElementById('modal-overlay').classList.add('hidden');}
+
+async function guardarItem(){
+  const id=document.getElementById('m-id').value;
+  const producto=document.getElementById('m-producto').value.trim();
+  const categoria=document.getElementById('m-categoria').value.trim();
+  const area=document.getElementById('m-area').value;
+  const tipo=document.getElementById('m-tipo').value;
+  if(!producto||!categoria||!area){toast('Completa los campos obligatorios (*)',true);return;}
+  const cantRaw=document.getElementById('m-cantidad').value;
+  const precioRaw=document.getElementById('m-precio').value;
+  const payload={
+    tipo,categoria,producto,area,
+    talla:document.getElementById('m-talla').value.trim()||null,
+    cantidad_sistema:cantRaw!==''?Number(cantRaw):null,
+    precio:precioRaw!==''?Number(precioRaw):null,
+    proveedor:document.getElementById('m-proveedor').value.trim()||null,
+    fecha_estimada:document.getElementById('m-fecha').value||null,
+    cantidad_texto:document.getElementById('m-notas').value.trim()||null,
+    es_punteo:document.getElementById('m-punteo').checked,
+  };
+  const btn=document.getElementById('btn-modal-guardar');btn.disabled=true;btn.textContent='Guardando…';
+  let error;
+  if(id){
+    ({error}=await db.from('inventario_items').update(payload).eq('id',id));
+  }else{
+    ({error}=await db.from('inventario_items').insert(payload));
+  }
+  btn.disabled=false;btn.textContent='Guardar';
+  if(error){toast('Error: '+error.message,true);return;}
+  toast(id?'Ítem actualizado':'Ítem agregado');
+  cerrarModal();
+  cargar();
+}
+
+/* ── ELIMINAR ── */
+let pendingDelId=null;
+function confirmarEliminar(id,nombre){
+  pendingDelId=id;
+  document.getElementById('confirm-nombre').textContent=nombre;
+  document.getElementById('confirm-overlay').classList.remove('hidden');
+  document.getElementById('btn-confirmar-del').onclick=ejecutarEliminar;
+}
+function cerrarConfirm(){document.getElementById('confirm-overlay').classList.add('hidden');pendingDelId=null;}
+async function ejecutarEliminar(){
+  if(!pendingDelId)return;
+  // soft delete
+  const{error}=await db.from('inventario_items').update({activo:false}).eq('id',pendingDelId);
+  cerrarConfirm();
+  if(error){toast('Error al eliminar: '+error.message,true);return;}
+  toast('Ítem eliminado');
+  cargar();
+}
+
+/* ── CONTEO ── */
+const AREA_INFO={'Punto de venta':'Exhibido en punto de venta','Bodega oficina':'Stock en bodega de oficina','Bodega':'Insumos y recursos','Produccion':'Con proveedor','Venta':'Registro de venta'};
+function renderAreaChips(){
+  const areas=[...new Set(ITEMS.map(i=>i.area))];
+  const order=['Bodega oficina','Punto de venta','Produccion','Bodega','Venta'];
+  areas.sort((a,b)=>(order.indexOf(a)+10)-(order.indexOf(b)+10));
+  document.getElementById('area-chips').innerHTML=areas.map(a=>{
+    const n=ITEMS.filter(i=>i.area===a).length;
+    return `<div class="area-chip" data-area="${a}" onclick="selArea(this,'${a}')">${a}<small>${n} ítems · ${AREA_INFO[a]||''}</small></div>`;
+  }).join('');
+}
+let areaSel=null;
+function selArea(el,a){document.querySelectorAll('.area-chip').forEach(c=>c.classList.remove('sel'));el.classList.add('sel');areaSel=a;}
+
+function iniciarConteo(){
+  if(!areaSel){toast('Elige un área primero',true);return;}
+  const tipo=document.getElementById('cs-tipo').value;
+  const cat=document.getElementById('cs-cat').value;
+  const quien=document.getElementById('cs-quien').value.trim();
+  let items=ITEMS.filter(i=>i.area===areaSel&&(!tipo||i.tipo===tipo)&&(!cat||i.categoria===cat));
+  if(!items.length){toast('No hay ítems para esa combinación',true);return;}
+  conteoState={area:areaSel,quien,items:items.map(i=>({...i,fisica:i.es_punteo?0:null}))};
+  document.getElementById('conteo-setup').style.display='none';
+  document.getElementById('conteo-run').style.display='flex';
+  document.getElementById('run-title').textContent='Contando: '+areaSel;
+  document.getElementById('run-sub').textContent=`${conteoState.items.length} ítems${quien?' · '+quien:''} · ${new Date().toLocaleDateString('es-MX')}`;
+  renderConteoLista();
+}
+function volverSetup(){document.getElementById('conteo-run').style.display='none';document.getElementById('conteo-setup').style.display='block';conteoState=null;}
+
+function renderConteoLista(){
+  const soloDif=document.getElementById('solo-dif').checked;
+  const items=conteoState.items;
+  let html='';let lastCat=null;let visibles=0;
+  for(let idx=0;idx<items.length;idx++){
+    const it=items[idx];
+    const dif=it.fisica==null?null:(Number(it.fisica)-(Number(it.cantidad_sistema)||0));
+    if(soloDif&&(dif===0||dif==null))continue;
+    visibles++;
+    if(it.categoria!==lastCat){lastCat=it.categoria;html+=`<div class="ci-cat">${it.categoria||'—'}</div>`;}
+    let difHtml=it.fisica==null?'<div class="ci-diff empty">—</div>':dif===0?'<div class="ci-diff ok">✓ cuadra</div>':`<div class="ci-diff warn">${dif>0?'+':''}${dif}</div>`;
+    let control=it.es_punteo
+      ?`<div class="punteo"><button onclick="punteo(${idx},-1)">−</button><div class="val mono">${it.fisica||0}</div><button onclick="punteo(${idx},1)">+</button></div>`
+      :`<input class="ci-input mono" type="number" min="0" inputmode="numeric" value="${it.fisica==null?'':it.fisica}" oninput="setFisica(${idx},this.value)" placeholder="?">`;
+    html+=`<div class="ci">
+      <div class="ci-info"><div class="ci-name">${it.producto}${it.talla?' · <b>'+it.talla+'</b>':''}</div>
+        <div class="ci-sub">${it.cantidad_texto?it.cantidad_texto:''}</div></div>
+      ${it.es_punteo?'':`<div class="ci-sys">sistema<br><b class="mono">${it.cantidad_sistema==null?'—':fmt(it.cantidad_sistema)}</b></div>`}
+      ${control}${difHtml}
+    </div>`;
+  }
+  if(!visibles)html='<div class="empty-state">'+(soloDif?'Sin diferencias 🎉':'Sin ítems')+'</div>';
+  document.getElementById('conteo-lista').innerHTML=html;
+  actualizarResumen();
+}
+
+function setFisica(idx,val){conteoState.items[idx].fisica=val===''?null:Number(val);actualizarResumen();}
+function punteo(idx,d){const it=conteoState.items[idx];it.fisica=Math.max(0,(Number(it.fisica)||0)+d);renderConteoLista();}
+
+function actualizarResumen(){
+  const items=conteoState.items;
+  const contados=items.filter(i=>i.fisica!=null).length;
+  const difs=items.filter(i=>i.fisica!=null&&Number(i.fisica)!==(Number(i.cantidad_sistema)||0)).length;
+  const pct=Math.round(contados/items.length*100);
+  document.getElementById('progress').style.width=pct+'%';
+  document.getElementById('count-summary').innerHTML=`Contados <b>${contados}/${items.length}</b> · Diferencias <b style="color:${difs?'var(--bad)':'var(--ok)'}">${difs}</b>`;
+}
+
+async function guardarConteo(){
+  const pend=conteoState.items.filter(i=>i.fisica!=null);
+  if(!pend.length){toast('No has capturado ningún conteo',true);return;}
+  const btn=document.getElementById('btn-guardar');btn.disabled=true;btn.textContent='Guardando…';
+  const sesion=`${conteoState.area} · ${new Date().toLocaleString('es-MX')}`;
+  const rows=pend.map(i=>{
+    const dif=Number(i.fisica)-(Number(i.cantidad_sistema)||0);
+    return{item_id:i.id,cantidad_fisica:Number(i.fisica),contado_por:conteoState.quien||null,sesion,
+      nota:dif!==0?`Diferencia ${dif>0?'+':''}${dif} (sistema ${i.cantidad_sistema==null?'—':i.cantidad_sistema})`:null};
+  });
+  const{error}=await db.from('inventario_conteos').insert(rows);
+  btn.disabled=false;btn.textContent='Guardar conteo';
+  if(error){toast('Error al guardar: '+error.message,true);return;}
+  toast(`Conteo guardado: ${rows.length} ítems`);
+  volverSetup();
+}
+
+cargar();
+</script>
+</body>
+</html>

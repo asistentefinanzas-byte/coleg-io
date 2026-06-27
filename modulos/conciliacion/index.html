@@ -24,6 +24,7 @@
   --sky:     #b8cfe0; --sky-bg:  #eaf2f8;
   --sand:    #e0d4b8; --sand-bg: #f7f2e8;
   --lavender:#d0c8e8; --lav-bg:  #f2eff8;
+  --amber:   #e8c878; --amber-bg:#fdf7e8;
   --sidebar-w: 220px;
   --topbar-h:  56px;
   --r: 10px;
@@ -31,7 +32,6 @@
 }
 
 html, body { height: 100%; background: var(--bg); color: var(--ink-1); font-family: 'Inter', sans-serif; font-size: 13.5px; overflow: hidden; -webkit-font-smoothing: antialiased; }
-
 .app { display: grid; grid-template-columns: var(--sidebar-w) 1fr; grid-template-rows: var(--topbar-h) 1fr; height: 100vh; }
 
 /* TOPBAR */
@@ -74,15 +74,244 @@ html, body { height: 100%; background: var(--bg); color: var(--ink-1); font-fami
 .user-role { font-size: 11px; color: var(--ink-4); }
 
 /* MAIN */
-.main { overflow-y: auto; overflow-x: hidden; padding: 36px 40px; display: flex; flex-direction: column; gap: 24px; background: var(--bg); }
+.main { overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 24px; background: var(--bg); }
 .main::-webkit-scrollbar { width: 3px; }
 .main::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+.vista-normal { display: flex; flex-direction: column; gap: 24px; padding: 36px 40px; }
+.vista-normal.oculta { display: none; }
+
+/* MODO MANUAL */
+.vista-manual { display: none; flex-direction: column; flex: 1; overflow: hidden; height: 100%; }
+.vista-manual.activa { display: flex; }
+.main.modo-manual { overflow: hidden; gap: 0; padding: 0; }
+
+/* FOCUS MODE */
+.app.focus-mode { grid-template-columns: 1fr !important; grid-template-rows: 1fr !important; }
+.app.focus-mode .sidebar { display: none !important; }
+.app.focus-mode .topbar  { display: none !important; }
+.app.focus-mode .main    { grid-column: 1 !important; grid-row: 1 !important; }
+#btn-exit-focus {
+  position: fixed; top: 12px; right: 16px; z-index: 2000;
+  display: none; background: rgba(30,30,30,.82); color: #fff; border: none;
+  padding: 6px 14px; border-radius: 8px; font-size: 12px; cursor: pointer;
+  backdrop-filter: blur(4px); gap: 6px; align-items: center;
+  transition: background .15s;
+}
+#btn-exit-focus:hover { background: rgba(60,60,60,.9); }
+.focus-mode #btn-exit-focus { display: flex; }
+
+/* DUPLICADOS */
+.dup-warn {
+  display: inline-flex; align-items: center; gap: 3px; margin-top: 3px;
+  font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;
+  background: #fff0f0; color: #c0392b; border: 1px solid #f5c6c6;
+  cursor: default;
+}
+.dup-sug {
+  display: inline-flex; align-items: center; gap: 3px; margin-top: 3px;
+  font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;
+  background: #fffbeb; color: #92400e; border: 1px solid #fde68a;
+  cursor: default;
+}
+
+/* SUGERENCIAS */
+#sugerencia-card {
+  margin: 0 20px 0; padding: 10px 14px;
+  background: #f0f7ff; border: 1.5px solid var(--sky); border-radius: 10px;
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  animation: slideDown .2s ease;
+}
+@keyframes slideDown { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:none } }
+.sug-label  { font-size: 11px; font-weight: 600; color: #2a5a8a; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
+.sug-texto  { font-size: 12.5px; color: var(--ink-1); flex: 1; min-width: 0; }
+.sug-texto strong { font-weight: 700; font-family: monospace; }
+.sug-tipo   { font-size: 10px; background: #d0e8ff; color: #2a5a8a; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
+.sug-btns   { display: flex; gap: 6px; flex-shrink: 0; }
+.sug-btns button { font-size: 11px; padding: 4px 10px; }
+
+.manual-bar {
+  display: flex; align-items: center; gap: 16px; padding: 10px 20px;
+  background: var(--surface); border-bottom: 2px solid var(--sky); flex-shrink: 0;
+}
+.manual-bar-title { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 400; color: var(--ink-1); }
+.manual-bar-sub { font-size: 11.5px; color: var(--ink-3); }
+.manual-filtros { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
+.split-view { display: flex; flex: 1; overflow: hidden; }
+.split-col { flex: 1; display: flex; flex-direction: column; border-right: 1px solid var(--border); min-width: 0; }
+.split-col:last-child { border-right: none; }
+
+.split-col-hd {
+  padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--border);
+  flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+}
+.split-col-title { font-size: 11px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; color: var(--ink-3); display: flex; align-items: center; gap: 8px; }
+.split-col-cnt { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 1px 8px; font-size: 10.5px; color: var(--ink-3); }
+.split-col-badge { font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+.badge-sel { background: var(--sky-bg); color: #3a7ab0; border: 1px solid var(--sky); }
+
+.split-col-body { flex: 1; overflow-y: auto; padding: 8px; }
+.split-col-body::-webkit-scrollbar { width: 3px; }
+.split-col-body::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+
+.col-group-label {
+  font-size: 10px; font-weight: 600; letter-spacing: .7px; text-transform: uppercase;
+  color: var(--ink-4); padding: 10px 6px 5px; display: flex; align-items: center; gap: 7px;
+}
+.col-group-cnt { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 0 5px; font-size: 10px; }
+.col-empty { padding: 40px 16px; text-align: center; color: var(--ink-4); font-size: 12.5px; }
+
+/* MOVEMENT CARDS */
+.mov-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  margin-bottom: 6px; padding: 9px 11px; position: relative;
+  display: flex; align-items: flex-start; gap: 8px;
+  transition: border-color .15s, background .15s;
+}
+.mov-card.selectable { cursor: pointer; }
+.mov-card.selectable:hover { border-color: var(--sky); background: #f5faff; }
+.mov-card.seleccionado { border-color: #3a7ab0 !important; background: var(--sky-bg); }
+.mov-card.banco-activo { border-color: #c09040 !important; background: #fdf9ee; }
+.mov-card.banco-activo::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: #c09040; border-radius: 8px 8px 0 0; }
+
+.card-check {
+  width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--border-2);
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: #3a7ab0; margin-top: 2px;
+  transition: all .15s;
+}
+.seleccionado .card-check { background: var(--sky); border-color: #3a7ab0; color: #3a7ab0; }
+
+.card-body { flex: 1; min-width: 0; }
+.card-r1 { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+.card-folio { font-family: monospace; font-size: 13.5px; font-weight: 700; color: var(--ink-1); flex-shrink: 0; letter-spacing: -.3px; }
+.card-folio mark.search-hl { background: #fff176; border-radius: 2px; padding: 0 1px; font-weight: 700; color: #2a5a8a; }
+.card-monto { font-size: 13px; font-weight: 600; color: var(--ink-1); white-space: nowrap; }
+.card-r2 { margin-bottom: 4px; }
+.card-nombre { font-size: 12px; color: var(--ink-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.card-clave  { font-family: monospace; font-size: 13.5px; font-weight: 700; color: var(--blue); flex-shrink: 0; letter-spacing: -.3px; }
+.card-ref    { font-family: monospace; font-size: 12px; font-weight: 500; color: var(--ink-2); flex-shrink: 0; }
+.card-desc { font-size: 11.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.card-r3 { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.card-periodo { font-size: 10.5px; color: var(--ink-4); }
+.card-concepto { font-size: 10.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+
+/* 3-DOT BUTTON */
+.tres-puntos {
+  flex-shrink: 0; width: 22px; height: 22px; border-radius: 5px;
+  background: none; border: 1px solid transparent; cursor: pointer;
+  color: var(--ink-4); font-size: 16px; line-height: 1; letter-spacing: 1px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s; font-weight: 700;
+}
+.tres-puntos:hover, .banco-card:hover .tres-puntos { background: var(--surface-2); border-color: var(--border); color: var(--ink-2); }
+
+/* MICRO-MENU */
+.micro-menu {
+  position: fixed; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; box-shadow: 0 6px 28px rgba(0,0,0,.13);
+  z-index: 500; min-width: 215px; overflow: hidden;
+  display: none;
+}
+.micro-menu.open { display: block; animation: menuIn .12s var(--ease); }
+@keyframes menuIn { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
+.micro-menu-sep { height: 1px; background: var(--border); margin: 3px 0; }
+.micro-menu-item {
+  padding: 9px 15px; cursor: pointer; font-size: 12.5px; color: var(--ink-2);
+  display: flex; align-items: center; gap: 10px; transition: background .1s;
+}
+.micro-menu-item:hover { background: var(--surface-2); color: var(--ink-1); }
+.micro-menu-item.danger { color: #9a3a3a; }
+.micro-menu-item.danger:hover { background: var(--rose-bg); }
+.micro-menu-label { font-size: 10px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: var(--ink-4); padding: 8px 15px 4px; }
+
+/* PANEL CUADRE EFECTIVO */
+.efectivo-panel {
+  position: fixed; top: var(--topbar-h); right: 0; bottom: 0;
+  width: 400px; background: var(--surface); border-left: 2px solid var(--sage);
+  z-index: 300; display: flex; flex-direction: column;
+  transform: translateX(100%); transition: transform .25s var(--ease);
+  box-shadow: -6px 0 32px rgba(0,0,0,.12);
+}
+.efectivo-panel.open { transform: translateX(0); }
+.ep-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 18px 20px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.ep-header-title { font-size: 13.5px; font-weight: 600; color: var(--ink-1); }
+.ep-header-sub { font-size: 11.5px; color: var(--ink-3); margin-top: 3px; }
+.ep-close { background: none; border: none; cursor: pointer; color: var(--ink-3); padding: 2px; font-size: 16px; line-height: 1; }
+.ep-close:hover { color: var(--ink-1); }
+.ep-rango {
+  display: flex; align-items: center; gap: 8px; padding: 14px 20px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap;
+}
+.ep-rango label { font-size: 11px; font-weight: 600; color: var(--ink-4); text-transform: uppercase; letter-spacing: .4px; }
+.ep-rango input[type=date] {
+  height: 30px; padding: 0 8px; border-radius: 7px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--ink-1); font: inherit; font-size: 12px; outline: none;
+}
+.ep-rango input[type=date]:focus { border-color: var(--border-2); }
+.ep-lista { flex: 1; overflow-y: auto; padding: 8px 0; }
+.ep-lista::-webkit-scrollbar { width: 3px; }
+.ep-lista::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+.ep-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 20px; cursor: pointer; transition: background .1s;
+  border-bottom: 1px solid var(--border);
+}
+.ep-item:hover { background: var(--surface-2); }
+.ep-item.sel { background: var(--sage-bg); }
+.ep-check {
+  width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--border-2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #3d7a5a; flex-shrink: 0;
+  transition: background .1s, border-color .1s;
+}
+.ep-item.sel .ep-check { background: var(--sage-bg); border-color: var(--sage); }
+.ep-item-info { flex: 1; min-width: 0; }
+.ep-item-nombre { font-size: 12.5px; font-weight: 500; color: var(--ink-1); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ep-item-meta { font-size: 11px; color: var(--ink-4); margin-top: 1px; }
+.ep-item-monto { font-size: 13px; font-weight: 600; color: var(--ink-2); flex-shrink: 0; }
+.ep-footer {
+  padding: 14px 20px; border-top: 1px solid var(--border); flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.ep-totales { display: flex; flex-direction: column; gap: 4px; }
+.ep-tot-row { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--ink-2); }
+.ep-tot-row strong { font-weight: 600; }
+.ep-tot-diff { font-size: 12.5px; font-weight: 600; }
+.ep-tot-diff.exact { color: #3d7a5a; }
+.ep-tot-diff.warn  { color: #9a5a10; }
+.ep-tot-diff.over  { color: #9a3a3a; }
+.ep-empty { padding: 24px 20px; text-align: center; color: var(--ink-4); font-size: 12.5px; }
+
+/* DESGLOSE BAR */
+.desglose-bar {
+  position: fixed; bottom: 0; left: var(--sidebar-w); right: 0;
+  background: var(--surface); border-top: 2px solid var(--amber);
+  padding: 11px 28px; z-index: 200;
+  display: none; align-items: center; gap: 20px;
+  box-shadow: 0 -4px 24px rgba(0,0,0,.1);
+}
+.desglose-bar.open { display: flex; }
+.bar-stat { display: flex; flex-direction: column; gap: 1px; }
+.bar-stat-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-4); }
+.bar-stat-val { font-size: 15px; font-weight: 600; color: var(--ink-1); }
+.bar-sep { width: 1px; height: 34px; background: var(--border); }
+.bar-diff-exact { font-size: 13px; font-weight: 600; color: #3d7a5a; }
+.bar-diff-monto { font-size: 13px; font-weight: 600; color: #9a5a10; }
+.bar-hint { font-size: 11.5px; color: var(--ink-3); }
+.bar-actions { margin-left: auto; display: flex; gap: 8px; }
 
 /* Header */
 .page-hd { display: flex; align-items: flex-end; justify-content: space-between; }
 .page-hd h1 { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 400; letter-spacing: -.3px; line-height: 1; }
 .page-hd p { font-size: 12.5px; color: var(--ink-3); margin-top: 5px; font-weight: 300; }
 .hd-actions { display: flex; gap: 8px; }
+
+/* BTN */
 .btn { display: flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 8px; font: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer; transition: all .15s var(--ease); border: 1px solid; }
 .btn-ghost { background: var(--surface); border-color: var(--border); color: var(--ink-2); }
 .btn-ghost:hover { border-color: var(--border-2); color: var(--ink-1); }
@@ -92,6 +321,11 @@ html, body { height: 100%; background: var(--bg); color: var(--ink-1); font-fami
 .btn-ok:hover { background: #ddecd7; }
 .btn-err  { background: var(--rose-bg); border-color: var(--rose); color: #9a3a3a; }
 .btn-err:hover { background: #f5dedd; }
+.btn-amber { background: var(--amber-bg); border-color: var(--amber); color: #7a5a10; }
+.btn-amber:hover { background: #faefc0; }
+.btn-sky  { background: var(--sky-bg); border-color: var(--sky); color: #2a5a8a; }
+.btn-sky:hover { background: #ddedf7; }
+.btn-manual-on { background: var(--sky-bg); border-color: var(--sky); color: #2a5a8a; }
 
 /* KPIs */
 .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
@@ -111,8 +345,7 @@ select, input[type=text] {
   height: 32px; padding: 0 10px; border-radius: 7px;
   background: var(--surface); border: 1px solid var(--border);
   color: var(--ink-1); font: inherit; font-size: 12.5px;
-  outline: none; transition: border-color .15s;
-  cursor: pointer;
+  outline: none; transition: border-color .15s; cursor: pointer;
 }
 select:focus, input[type=text]:focus { border-color: var(--border-2); }
 .filter-sep { width: 1px; height: 20px; background: var(--border); }
@@ -126,15 +359,18 @@ select:focus, input[type=text]:focus { border-color: var(--border-2); }
 .panel-hd { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
 .panel-title { font-size: 13px; font-weight: 600; color: var(--ink-1); }
 .panel-count { font-size: 11px; color: var(--ink-4); }
-
 .tbl-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th { font-size: 10.5px; font-weight: 600; color: var(--ink-4); text-transform: uppercase; letter-spacing: .5px; padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; background: var(--surface); position: sticky; top: 0; }
+.th-sort { cursor: pointer; user-select: none; }
+.th-sort:hover { color: var(--ink-2); }
+.th-sort span:first-child { margin-right: 4px; }
+.sort-ico { font-style: normal; color: var(--ink-3); font-size: 10px; }
 td { padding: 10px 14px; font-size: 12.5px; color: var(--ink-2); border-bottom: 1px solid var(--border); white-space: nowrap; }
 tr:last-child td { border-bottom: none; }
 tr:hover td { background: var(--surface-2); }
-tr.selected-row td { background: var(--sky-bg); }
 
+/* TAGS */
 .tag { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; border: 1px solid; white-space: nowrap; display: inline-block; }
 .tag-ok    { color: #3d7a5a; background: var(--sage-bg); border-color: var(--sage); }
 .tag-pend  { color: #8a6a20; background: var(--sand-bg); border-color: var(--sand); }
@@ -142,19 +378,43 @@ tr.selected-row td { background: var(--sky-bg); }
 .tag-blue  { color: #2a5a8a; background: var(--sky-bg);  border-color: var(--sky);  }
 .tag-lav   { color: #5a4e8a; background: var(--lav-bg);  border-color: var(--lavender); }
 .tag-gray  { color: var(--ink-3); background: var(--surface-2); border-color: var(--border); }
+.tag-tr-ant { color: #6a3820; background: #f7ebe0; border-color: #d49878; }
+.tag-tr-sig { color: #1a4a6a; background: #e0eef7; border-color: #78b0d4; }
+.tag-desg  { color: #2a4e7a; background: #e8f2fb; border-color: #98b8e0; }
+.tag-diff  { color: #7a4e08; background: var(--amber-bg); border-color: var(--amber); }
 
-/* Acciones de fila */
-.row-actions { display: flex; gap: 5px; opacity: 0; transition: opacity .15s; }
+/* Row actions */
+.row-actions { display: flex; gap: 4px; opacity: 0; transition: opacity .15s; }
 tr:hover .row-actions { opacity: 1; }
-.act-btn { padding: 3px 10px; border-radius: 5px; font: inherit; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid; transition: all .1s; }
+.act-btn { padding: 3px 9px; border-radius: 5px; font: inherit; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid; transition: all .1s; }
 
-/* Modal de detalle */
-.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.25); z-index: 100; display: none; align-items: center; justify-content: center; }
+/* Pagination */
+.pagination { display: flex; align-items: center; gap: 8px; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--border); }
+.pag-btn { width: 28px; height: 28px; border-radius: 6px; background: none; border: 1px solid var(--border); color: var(--ink-3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+.pag-btn:hover:not(:disabled) { border-color: var(--border-2); color: var(--ink-1); }
+.pag-btn:disabled { opacity: .35; cursor: default; }
+.pag-info { font-size: 12px; color: var(--ink-3); }
+
+/* State */
+.state-msg { padding: 48px 0; text-align: center; color: var(--ink-4); font-size: 13px; }
+mark.search-hl { background: #fff176; border-radius: 2px; padding: 0 1px; font-style: normal; color: inherit; }
+.col-search-count { font-size: 10.5px; color: #2a5a8a; font-weight: 500; padding: 4px 6px 8px; }
+
+/* Toast */
+.toast { position: fixed; bottom: 24px; right: 24px; padding: 10px 18px; border-radius: 8px; font-size: 12.5px; font-weight: 500; z-index: 999; opacity: 0; transform: translateY(8px); transition: all .2s; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast-ok  { background: var(--sage-bg);  border: 1px solid var(--sage);  color: #3d7a5a; }
+.toast-err { background: var(--rose-bg); border: 1px solid var(--rose); color: #9a3a3a; }
+
+/* MODALS */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.3); z-index: 400; display: none; align-items: center; justify-content: center; }
 .overlay.open { display: flex; }
-.modal { background: var(--surface); border-radius: 12px; padding: 28px 32px; width: 520px; max-width: 95vw; box-shadow: 0 8px 40px rgba(0,0,0,.12); position: relative; }
+.modal { background: var(--surface); border-radius: 12px; padding: 28px 32px; width: 520px; max-width: 95vw; box-shadow: 0 8px 40px rgba(0,0,0,.14); position: relative; }
+.modal-sm { width: 400px; }
 .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; cursor: pointer; color: var(--ink-3); font-size: 18px; line-height: 1; }
 .modal-close:hover { color: var(--ink-1); }
-.modal h2 { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 400; margin-bottom: 20px; }
+.modal h2 { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 400; margin-bottom: 6px; }
+.modal-sub { font-size: 12.5px; color: var(--ink-3); margin-bottom: 20px; }
 .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
 .modal-field label { font-size: 10.5px; font-weight: 600; color: var(--ink-4); text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 4px; }
 .modal-field p { font-size: 13px; color: var(--ink-1); }
@@ -163,22 +423,28 @@ tr:hover .row-actions { opacity: 1; }
 .modal-notes:focus { border-color: var(--border-2); }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
-/* Paginación */
-.pagination { display: flex; align-items: center; gap: 8px; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--border); }
-.pag-btn { width: 28px; height: 28px; border-radius: 6px; background: none; border: 1px solid var(--border); color: var(--ink-3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
-.pag-btn:hover:not(:disabled) { border-color: var(--border-2); color: var(--ink-1); }
-.pag-btn:disabled { opacity: .35; cursor: default; }
-.pag-info { font-size: 12px; color: var(--ink-3); }
+/* Transit option cards */
+.transit-options { display: flex; gap: 12px; margin-top: 4px; margin-bottom: 24px; }
+.transit-opt {
+  flex: 1; border: 1px solid var(--border); border-radius: 10px; padding: 16px 14px;
+  cursor: pointer; text-align: center; transition: all .15s; background: var(--surface);
+}
+.transit-opt:hover { border-color: var(--border-2); background: var(--surface-2); }
+.transit-opt.sel-ant { border-color: #d49878; background: #f7ebe0; }
+.transit-opt.sel-sig { border-color: #78b0d4; background: #e0eef7; }
+.transit-opt-icon { font-size: 24px; margin-bottom: 8px; }
+.transit-opt-label { font-size: 13px; font-weight: 500; color: var(--ink-1); margin-bottom: 3px; }
+.transit-opt-desc { font-size: 11px; color: var(--ink-3); }
 
-/* Loading / empty */
-.state-msg { padding: 48px 0; text-align: center; color: var(--ink-4); font-size: 13px; }
+/* Diff warning */
+.diff-warning-box {
+  background: var(--amber-bg); border: 1px solid var(--amber); border-radius: 8px;
+  padding: 14px 16px; margin-bottom: 20px;
+}
+.diff-warning-box p { font-size: 12.5px; color: #7a4e08; }
+.diff-warning-box strong { font-size: 15px; display: block; margin-top: 4px; }
 
-/* Toast */
-.toast { position: fixed; bottom: 24px; right: 24px; padding: 10px 18px; border-radius: 8px; font-size: 12.5px; font-weight: 500; z-index: 999; opacity: 0; transform: translateY(8px); transition: all .2s; pointer-events: none; }
-.toast.show { opacity: 1; transform: translateY(0); }
-.toast-ok  { background: var(--sage-bg);  border: 1px solid var(--sage);  color: #3d7a5a; }
-.toast-err { background: var(--rose-bg); border: 1px solid var(--rose); color: #9a3a3a; }
-
+/* Mobile */
 .menu-btn{display:none;width:34px;height:34px;background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;align-items:center;justify-content:center;color:var(--ink-2);flex-shrink:0;}
 .sidebar-backdrop{display:none;position:fixed;inset:0;z-index:40;background:rgba(26,24,20,.45);}
 .sidebar-backdrop.show{display:block;}
@@ -189,20 +455,20 @@ tr:hover .row-actions { opacity: 1; }
   .menu-btn{display:flex;}
   .topbar{padding:0 14px;gap:8px;}
   .logo-sep,.logo-region,.breadcrumb{display:none;}
-  .topbar-right,.topbar-r{gap:6px;}
+  .topbar-r{gap:6px;}
   .conn-badge span{display:none;}
   .sidebar{position:fixed;left:-260px;top:0;bottom:0;width:240px;z-index:50;transition:left .25s cubic-bezier(.4,0,.2,1);padding-top:calc(var(--topbar-h) + 12px);}
   .sidebar.open{left:0;box-shadow:4px 0 24px rgba(0,0,0,.18);}
-  .main{overflow-y:auto;height:calc(100vh - var(--topbar-h));padding:16px 12px;}
-  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  .filters-row{flex-wrap:wrap;gap:8px;}
-  .filters-row input,.filters-row select{min-width:0;flex:1 1 140px;}
+  .main{overflow-y:auto;height:calc(100vh - var(--topbar-h));}
+  .vista-normal{padding:16px 12px;}
   .kpi-row{grid-template-columns:1fr 1fr!important;}
-  .panel-hd{flex-wrap:wrap;gap:8px;}
+  .split-view{flex-direction:column;}
+  .split-col{border-right:none;border-bottom:1px solid var(--border);max-height:33vh;}
+  .desglose-bar{left:0;}
+  .btn-txt-short{display:none;}
 }
 @media(max-width:480px){
   .kpi-row{grid-template-columns:1fr!important;}
-  .topbar-search{width:auto;flex:1;}
 }
 </style>
 </head>
@@ -210,13 +476,110 @@ tr:hover .row-actions { opacity: 1; }
 
 <div class="toast" id="toast"></div>
 
-<!-- Modal detalle -->
+<!-- ── Micro-menú ── -->
+<div class="micro-menu" id="micro-menu">
+  <div class="micro-menu-label">Opciones del movimiento</div>
+  <div class="micro-menu-item" onclick="accionMenu('detalle')">
+    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/></svg>
+    Ver detalle / Editar folio
+  </div>
+  <div class="micro-menu-sep"></div>
+  <div class="micro-menu-item" onclick="accionMenu('coincidir')">
+    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg>
+    Coincidir movimiento
+  </div>
+  <div class="micro-menu-item" onclick="accionMenu('desglose')">
+    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M8 6H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+    Desglosar movimiento
+  </div>
+  <div class="micro-menu-item" id="mm-item-efectivo" onclick="accionMenu('cuadrar-efectivo')" style="display:none">
+    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+    Cuadrar efectivo
+  </div>
+  <div class="micro-menu-item" onclick="accionMenu('transito')">
+    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Sugerencia de tránsito
+  </div>
+  <div class="micro-menu-sep"></div>
+  <div class="micro-menu-item" onclick="accionMenu('revision')">
+    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    Revisar movimiento
+  </div>
+</div>
+
+<!-- ── Modal tránsito ── -->
+<div class="overlay" id="overlay-transito">
+  <div class="modal modal-sm">
+    <button class="modal-close" onclick="cerrarTransito()">✕</button>
+    <h2>Movimiento en tránsito</h2>
+    <p class="modal-sub">Indica a qué período pertenece este movimiento bancario.</p>
+    <div class="transit-options">
+      <div class="transit-opt" id="opt-anterior" onclick="seleccionarTransito('MES_ANTERIOR')">
+        <div class="transit-opt-icon">⬅</div>
+        <div class="transit-opt-label">Mes anterior</div>
+        <div class="transit-opt-desc">El pago ingresó al banco este mes pero corresponde al período anterior</div>
+      </div>
+      <div class="transit-opt" id="opt-siguiente" onclick="seleccionarTransito('MES_SIGUIENTE')">
+        <div class="transit-opt-icon">➡</div>
+        <div class="transit-opt-label">Mes siguiente</div>
+        <div class="transit-opt-desc">El pago se registró en sistema pero el banco lo reflejará el período siguiente</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="cerrarTransito()">Cancelar</button>
+      <button class="btn btn-amber" id="btn-confirmar-transito" onclick="confirmarTransito()" disabled>Marcar tránsito</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal diferencia desglose ── -->
+<div class="overlay" id="overlay-diferencia">
+  <div class="modal modal-sm">
+    <button class="modal-close" onclick="document.getElementById('overlay-diferencia').classList.remove('open')">✕</button>
+    <h2>Diferencia detectada</h2>
+    <p class="modal-sub">Las cantidades no coinciden exactamente.</p>
+    <div class="diff-warning-box">
+      <p>El movimiento ingresará manualmente con una diferencia de:</p>
+      <strong id="diff-monto-txt">—</strong>
+      <p id="diff-dir-txt" style="margin-top:4px;font-size:11.5px"></p>
+    </div>
+    <p style="font-size:12.5px;color:var(--ink-3);margin-bottom:20px">El registro quedará marcado con una etiqueta de advertencia y se anotará la diferencia en las notas del movimiento.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('overlay-diferencia').classList.remove('open')">Cancelar</button>
+      <button class="btn btn-amber" onclick="confirmarDesglose(true)">Continuar de todas formas</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal detalle (vista normal) ── -->
 <div class="overlay" id="overlay">
   <div class="modal">
     <button class="modal-close" onclick="closeModal()">✕</button>
     <h2 id="modal-title">Detalle del movimiento</h2>
     <div class="modal-grid">
-      <div class="modal-field"><label>Folio</label><p id="m-folio">—</p></div>
+      <div class="modal-field" id="folio-field-view">
+        <label>Folio</label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <p id="m-folio" style="flex:1">—</p>
+          <button id="btn-edit-folio" onclick="toggleEditFolio()" title="Editar folio (solo super admin)"
+            style="display:none;font:inherit;font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink-3);cursor:pointer;flex-shrink:0;transition:all .15s">
+            Editar
+          </button>
+        </div>
+      </div>
+      <div class="modal-field" id="folio-field-edit" style="display:none">
+        <label style="display:flex;align-items:center;gap:6px">
+          Folio
+          <span style="font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:99px;background:#fef3c7;color:#92400e;border:1px solid #f59e0b;letter-spacing:.2px">SUPER ADMIN</span>
+        </label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input id="inp-folio-edit" type="text" placeholder="Nuevo folio…"
+            style="flex:1;height:34px;padding:0 10px;border-radius:7px;border:1px solid var(--amber);font:inherit;font-size:13px;font-family:monospace;background:#fdf7e8;color:var(--ink-1);outline:none;font-weight:600">
+          <button onclick="guardarFolioEdit()" style="height:34px;padding:0 12px;border-radius:7px;border:none;background:var(--ink-1);color:#fff;font:inherit;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Guardar</button>
+          <button onclick="toggleEditFolio()" style="height:34px;padding:0 10px;border-radius:7px;border:1px solid var(--border);background:none;font:inherit;font-size:12px;color:var(--ink-3);cursor:pointer;flex-shrink:0">✕</button>
+        </div>
+        <div style="font-size:10.5px;color:#92400e;margin-top:4px">⚠ El folio es la clave de conciliación. Solo corregir errores de captura.</div>
+      </div>
       <div class="modal-field"><label>Fuente</label><p id="m-fuente">—</p></div>
       <div class="modal-field"><label>Fecha</label><p id="m-fecha">—</p></div>
       <div class="modal-field"><label>Periodo</label><p id="m-periodo">—</p></div>
@@ -228,19 +591,107 @@ tr:hover .row-actions { opacity: 1; }
       <div class="modal-field"><label>Forma de pago</label><p id="m-pago">—</p></div>
       <div class="modal-field full"><label>Concepto</label><p id="m-concepto">—</p></div>
       <div class="modal-field full"><label>Descripción banco</label><p id="m-desc">—</p></div>
-      <div class="modal-field full"><label>Clasificación automática</label><p id="m-clasif">—</p></div>
+      <div class="modal-field full"><label>Clasificación</label><p id="m-clasif">—</p></div>
     </div>
     <label style="font-size:10.5px;font-weight:600;color:var(--ink-4);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Notas del operador</label>
     <textarea class="modal-notes" id="modal-notas" placeholder="Agrega comentarios sobre este movimiento…"></textarea>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-err" onclick="accionModal('RECHAZADO')">Rechazar</button>
-      <button class="btn btn-ok"  onclick="accionModal('EN_REVISION')">En revisión</button>
+      <button class="btn btn-ghost" onclick="accionModal('TRANSITO_MODAL')" style="border-color:var(--amber);color:#7a4e08">⏱ Tránsito</button>
+      <button class="btn btn-err"   onclick="accionModal('RECHAZADO')">Rechazar</button>
+      <button class="btn btn-ok"    onclick="accionModal('EN_REVISION')">En revisión</button>
       <button class="btn btn-solid" onclick="accionModal('APROBADO')">Aprobar</button>
     </div>
   </div>
 </div>
 
+<!-- ── Barra de coincidir ── -->
+<div class="desglose-bar" id="coincidir-bar">
+  <div class="bar-stat">
+    <span class="bar-stat-label">Banco</span>
+    <span class="bar-stat-val" id="cb-banco">—</span>
+  </div>
+  <div class="bar-sep"></div>
+  <div class="bar-stat">
+    <span class="bar-stat-label">Sistema seleccionado</span>
+    <span class="bar-stat-val" id="cb-sistema">—</span>
+  </div>
+  <div class="bar-sep"></div>
+  <div>
+    <div id="cb-diff-label" class="bar-diff-exact">—</div>
+    <div class="bar-hint">Selecciona el movimiento del sistema que coincide</div>
+  </div>
+  <div class="bar-actions">
+    <button class="btn btn-ghost" onclick="cancelarCoincidir()">Cancelar</button>
+    <button class="btn btn-success" onclick="confirmarCoincidir()" id="btn-confirmar-coincidir" disabled>Confirmar coincidencia</button>
+  </div>
+</div>
+
+<!-- ── Barra de desglose ── -->
+<div class="desglose-bar" id="desglose-bar">
+  <div class="bar-stat">
+    <span class="bar-stat-label">Banco</span>
+    <span class="bar-stat-val" id="bar-banco">—</span>
+  </div>
+  <div class="bar-sep"></div>
+  <div class="bar-stat">
+    <span class="bar-stat-label">Seleccionado (sistema)</span>
+    <span class="bar-stat-val" id="bar-sel">$0.00</span>
+  </div>
+  <div class="bar-sep"></div>
+  <div>
+    <div id="bar-diff-label" class="bar-diff-exact">—</div>
+    <div class="bar-hint" id="bar-hint">Selecciona movimientos del sistema</div>
+  </div>
+  <div class="bar-actions">
+    <button class="btn btn-ghost" onclick="cancelarDesglose()">Cancelar</button>
+    <button class="btn btn-amber" onclick="confirmarDesglose(false)" id="btn-confirmar-desglose">Confirmar desglose</button>
+  </div>
+</div>
+
+<!-- ── Panel Cuadre Efectivo ── -->
+<div class="efectivo-panel" id="efectivo-panel">
+  <div class="ep-header">
+    <div>
+      <div class="ep-header-title">Cuadrar efectivo</div>
+      <div class="ep-header-sub" id="ep-banco-info">—</div>
+    </div>
+    <button class="ep-close" onclick="cerrarCuadreEfectivo()">✕</button>
+  </div>
+  <div class="ep-rango">
+    <label>Desde</label>
+    <input type="date" id="ep-desde" onchange="filtrarEfectivo()">
+    <label>Hasta</label>
+    <input type="date" id="ep-hasta" onchange="filtrarEfectivo()">
+  </div>
+  <div class="ep-lista" id="ep-lista">
+    <div class="ep-empty">Selecciona un rango de fechas.</div>
+  </div>
+  <div class="ep-footer">
+    <div class="ep-totales">
+      <div class="ep-tot-row">
+        <span>Banco (depósito)</span>
+        <strong id="ep-monto-banco">—</strong>
+      </div>
+      <div class="ep-tot-row">
+        <span>Sistema seleccionado</span>
+        <strong id="ep-suma-sistema">$0.00</strong>
+      </div>
+      <div class="ep-tot-diff" id="ep-diff"></div>
+    </div>
+    <button class="btn btn-ok" id="ep-confirmar" onclick="confirmarCuadreEfectivo()" disabled style="width:100%;justify-content:center">
+      Confirmar cuadre
+    </button>
+  </div>
+</div>
+
+<!-- Botón flotante salir de focus -->
+<button id="btn-exit-focus" onclick="toggleFocusMode()">
+  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  Salir de Focus Mode
+</button>
+
+<!-- ── APP ── -->
 <div class="app">
 
 <!-- TOPBAR -->
@@ -258,6 +709,11 @@ tr:hover .row-actions { opacity: 1; }
     <span style="color:var(--ink-2)">Conciliación</span>
   </div>
   <div class="topbar-r">
+    <button class="btn btn-ghost" id="btn-manual" onclick="toggleModoManual()" style="font-size:12px">
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="10" rx="1"/><rect x="14" y="17" width="7" height="4" rx="1"/></svg>
+      <span class="btn-txt-short">Conciliación manual</span>
+    </button>
+    <div class="topbar-sep"></div>
     <div class="conn-badge">
       <div class="conn-dot" id="connDot"></div>
       <span id="connLabel">Conectando…</span>
@@ -290,12 +746,33 @@ tr:hover .row-actions { opacity: 1; }
       </div>
       <span class="nav-label">Conciliación</span>
     </a>
-    <a class="nav-item" href="../../index.html">
+    <a class="nav-item" href="../inventario/index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--sage-bg);border:1px solid var(--sage)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#3a7a55" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      </div>
+      <span class="nav-label">Inventario</span>
+    </a>
+    <a class="nav-item" href="../reportes/index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--lav-bg);border:1px solid var(--lav)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#5a4e8a" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <span class="nav-label">Reportes</span>
+    </a>
+    <a class="nav-item" href="../cobranza/index.html">
       <div class="nav-dot"></div>
       <div class="nav-ico" style="background:var(--sand-bg);border:1px solid var(--sand)">
         <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#8a6a20" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
       </div>
       <span class="nav-label">Cobranza</span>
+    </a>
+    <a class="nav-item" href="../rh/index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:#f0faf4;border:1px solid #a8d5b5">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#3a7a55" stroke-width="1.8"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="13" y2="15"/></svg>
+      </div>
+      <span class="nav-label">RH — Contratos</span>
     </a>
   </div>
   <div class="sidebar-footer">
@@ -311,163 +788,298 @@ tr:hover .row-actions { opacity: 1; }
 </aside>
 
 <!-- MAIN -->
-<main class="main">
+<main class="main" id="main-content">
 
-  <div class="page-hd">
-    <div>
-      <h1>Conciliación bancaria</h1>
-      <p>Revisión y aprobación de movimientos procesados por n8n</p>
+  <!-- ── Vista Normal ── -->
+  <div class="vista-normal" id="vista-normal">
+
+    <div class="page-hd">
+      <div>
+        <h1>Conciliación bancaria</h1>
+        <p>Revisión y aprobación de movimientos procesados por n8n</p>
+      </div>
+      <div class="hd-actions">
+        <button class="btn btn-ghost" onclick="cargarDatos()">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4"/></svg>
+          Actualizar
+        </button>
+      </div>
     </div>
-    <div class="hd-actions">
-      <button class="btn btn-ghost" onclick="cargarDatos()">
-        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4"/></svg>
-        Actualizar
+
+    <div class="kpi-row">
+      <div class="kpi" id="kpi-todos" onclick="filtrarPorEstatus(null, this)">
+        <div class="kpi-accent" style="background:var(--border-2)"></div>
+        <div class="kpi-label">Total registros</div>
+        <div class="kpi-val" id="k-total">—</div>
+        <div class="kpi-sub">todos los estatus</div>
+      </div>
+      <div class="kpi" id="kpi-pend" onclick="filtrarPorEstatus('PENDIENTE', this)">
+        <div class="kpi-accent" style="background:var(--sand)"></div>
+        <div class="kpi-label">Pendientes</div>
+        <div class="kpi-val" id="k-pend">—</div>
+        <div class="kpi-sub">requieren revisión</div>
+      </div>
+      <div class="kpi" id="kpi-apro" onclick="filtrarPorEstatus('APROBADO', this)">
+        <div class="kpi-accent" style="background:var(--sage)"></div>
+        <div class="kpi-label">Aprobados</div>
+        <div class="kpi-val" id="k-apro">—</div>
+        <div class="kpi-sub">conciliados</div>
+        <div id="alerta-folio-incongruente" style="display:none;margin-top:5px;font-size:10px;font-weight:600;color:#b45309;background:#fef3c7;border:1px solid #f59e0b;border-radius:5px;padding:3px 7px;line-height:1.3;cursor:pointer" onclick="event.stopPropagation();filtrarFoliosIncongruentes()"></div>
+      </div>
+      <div class="kpi" id="kpi-revi" onclick="filtrarPorEstatus('EN_REVISION', this)">
+        <div class="kpi-accent" style="background:var(--sky)"></div>
+        <div class="kpi-label">En revisión</div>
+        <div class="kpi-val" id="k-revi">—</div>
+        <div class="kpi-sub">asignados a revisar</div>
+      </div>
+      <div class="kpi" id="kpi-rech" onclick="filtrarPorEstatus('RECHAZADO', this)">
+        <div class="kpi-accent" style="background:var(--rose)"></div>
+        <div class="kpi-label">Folios Cancelados</div>
+        <div class="kpi-val" id="k-rech">—</div>
+        <div class="kpi-sub">no conciliados</div>
+      </div>
+    </div>
+
+    <div class="filters">
+      <div class="search-wrap">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="var(--ink-4)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="busqueda" placeholder="Buscar folio, nombre, monto, referencia…" oninput="aplicarFiltros()">
+      </div>
+      <div class="filter-sep"></div>
+      <div class="filter-group">
+        <span class="filter-label">Fuente</span>
+        <select id="f-fuente" onchange="aplicarFiltros()">
+          <option value="">Todas</option>
+          <option value="SANTANDER">Santander</option>
+          <option value="HSBC">HSBC</option>
+          <option value="SISTEMA">Sistema</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Periodo</span>
+        <select id="f-periodo" onchange="aplicarFiltros()">
+          <option value="">Todos</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Forma de pago</span>
+        <select id="f-forma-pago" onchange="aplicarFiltros()">
+          <option value="">Todas</option>
+          <option value="EFECTIVO">Efectivo</option>
+          <option value="TRANSFER">Transferencia</option>
+          <option value="T.CREDITO">T. Crédito</option>
+          <option value="T.DEBITO">T. Débito</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Clasificación</span>
+        <select id="f-clasif" onchange="aplicarFiltros()">
+          <option value="">Todas</option>
+          <option value="COINCIDE">Coincide</option>
+          <option value="AFIL">AFIL</option>
+          <option value="SIN_COINCIDENCIA">Sin coincidencia</option>
+          <option value="TRANSITO_SALIENTE">Tránsito saliente</option>
+          <option value="TRANSITO_ANTERIOR">Tránsito mes anterior</option>
+          <option value="TRANSITO_SIGUIENTE">Tránsito mes siguiente</option>
+          <option value="DESGLOSE_MANUAL">Desglose manual</option>
+          <option value="DESGLOSE_CON_DIFERENCIA">Desglose con diferencia</option>
+          <option value="FOLIO_INCONGRUENTE">⚠ Folio incongruente</option>
+        </select>
+      </div>
+      <button class="btn btn-ghost" onclick="limpiarFiltros()" style="padding:6px 12px;font-size:11.5px">
+        Limpiar
       </button>
     </div>
-  </div>
 
-  <!-- KPIs (clic para filtrar) -->
-  <div class="kpi-row">
-    <div class="kpi" id="kpi-todos" onclick="filtrarPorEstatus(null, this)">
-      <div class="kpi-accent" style="background:var(--border-2)"></div>
-      <div class="kpi-label">Total registros</div>
-      <div class="kpi-val" id="k-total">—</div>
-      <div class="kpi-sub">todos los estatus</div>
+    <div class="panel">
+      <div class="panel-hd">
+        <span class="panel-title">Movimientos</span>
+        <span class="panel-count" id="panel-count">—</span>
+      </div>
+      <div class="tbl-wrap table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th class="th-sort" onclick="toggleSort('folio')"><span>Folio</span><span class="sort-ico" id="sico-folio"></span></th>
+              <th>Fuente</th>
+              <th class="th-sort" onclick="toggleSort('fecha')"><span>Fecha</span><span class="sort-ico" id="sico-fecha"></span></th>
+              <th class="th-sort" onclick="toggleSort('periodo')"><span>Periodo</span><span class="sort-ico" id="sico-periodo"></span></th>
+              <th class="th-sort" onclick="toggleSort('monto_banco')"><span>Monto banco</span><span class="sort-ico" id="sico-monto_banco"></span></th>
+              <th>Monto sistema</th>
+              <th>Alumno</th>
+              <th>Clasificación</th>
+              <th>Estatus</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tabla-body">
+            <tr><td colspan="10" class="state-msg">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <span class="pag-info" id="pag-info">—</span>
+        <button class="pag-btn" id="btn-prev" onclick="cambiarPagina(-1)" disabled>
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button class="pag-btn" id="btn-next" onclick="cambiarPagina(1)" disabled>
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
     </div>
-    <div class="kpi" id="kpi-pend" onclick="filtrarPorEstatus('PENDIENTE', this)">
-      <div class="kpi-accent" style="background:var(--sand)"></div>
-      <div class="kpi-label">Pendientes</div>
-      <div class="kpi-val" id="k-pend">—</div>
-      <div class="kpi-sub">requieren revisión</div>
-    </div>
-    <div class="kpi" id="kpi-apro" onclick="filtrarPorEstatus('APROBADO', this)">
-      <div class="kpi-accent" style="background:var(--sage)"></div>
-      <div class="kpi-label">Aprobados</div>
-      <div class="kpi-val" id="k-apro">—</div>
-      <div class="kpi-sub">conciliados</div>
-    </div>
-    <div class="kpi" id="kpi-revi" onclick="filtrarPorEstatus('EN_REVISION', this)">
-      <div class="kpi-accent" style="background:var(--sky)"></div>
-      <div class="kpi-label">En revisión</div>
-      <div class="kpi-val" id="k-revi">—</div>
-      <div class="kpi-sub">asignados a revisar</div>
-    </div>
-    <div class="kpi" id="kpi-rech" onclick="filtrarPorEstatus('RECHAZADO', this)">
-      <div class="kpi-accent" style="background:var(--rose)"></div>
-      <div class="kpi-label">Rechazados</div>
-      <div class="kpi-val" id="k-rech">—</div>
-      <div class="kpi-sub">no conciliados</div>
-    </div>
-  </div>
 
-  <!-- Filtros -->
-  <div class="filters">
-    <div class="search-wrap">
-      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="var(--ink-4)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input type="text" id="busqueda" placeholder="Buscar folio, nombre, referencia…" oninput="aplicarFiltros()">
-    </div>
-    <div class="filter-sep"></div>
-    <div class="filter-group">
-      <span class="filter-label">Fuente</span>
-      <select id="f-fuente" onchange="aplicarFiltros()">
-        <option value="">Todas</option>
-        <option value="SANTANDER">Santander</option>
-        <option value="HSBC">HSBC</option>
-        <option value="SISTEMA">Sistema</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <span class="filter-label">Periodo</span>
-      <select id="f-periodo" onchange="aplicarFiltros()">
-        <option value="">Todos</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <span class="filter-label">Clasificación</span>
-      <select id="f-clasif" onchange="aplicarFiltros()">
-        <option value="">Todas</option>
-        <option value="COINCIDE">Coincide</option>
-        <option value="AFIL">AFIL</option>
-        <option value="SIN_COINCIDENCIA">Sin coincidencia</option>
-        <option value="TRANSITO_SALIENTE">Tránsito saliente</option>
-      </select>
-    </div>
-    <button class="btn btn-ghost" onclick="limpiarFiltros()" style="padding:6px 12px;font-size:11.5px">
-      Limpiar filtros
-    </button>
-  </div>
+  </div><!-- /vista-normal -->
 
-  <!-- Tabla -->
-  <div class="panel">
-    <div class="panel-hd">
-      <span class="panel-title">Movimientos</span>
-      <span class="panel-count" id="panel-count">—</span>
+  <!-- ── Vista Manual ── -->
+  <div class="vista-manual" id="vista-manual">
+
+    <div class="manual-bar">
+      <div>
+        <div class="manual-bar-title">Conciliación manual</div>
+        <div class="manual-bar-sub">Movimientos pendientes por período — arrastra para relacionar o usa el menú ⋯</div>
+      </div>
+      <div class="manual-filtros">
+        <button class="btn btn-ghost" onclick="toggleFocusMode()" id="btn-focus" style="padding:5px 12px;font-size:12px" title="Focus Mode">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+          Focus
+        </button>
+        <div class="filter-sep" style="height:18px"></div>
+        <div class="search-wrap" style="height:30px">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="var(--ink-4)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="m-busqueda" placeholder="Buscar folio, monto, nombre…" oninput="buscarManual()" style="width:200px;height:auto">
+        </div>
+        <div class="filter-sep" style="height:18px"></div>
+        <span class="filter-label">Periodo</span>
+        <select id="m-periodo" onchange="renderModoManual()" style="height:30px;font-size:12px">
+          <option value="">Todos</option>
+        </select>
+        <button class="btn btn-ghost" id="btn-sug-toggle" onclick="sugerenciasActivas ? desactivarSugerencias() : activarSugerencias()" style="padding:5px 12px;font-size:12px" title="Sugerencias de coincidencia">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Sugerencias
+        </button>
+        <button class="btn btn-ghost" onclick="cargarDatos().then(()=>{ generarSugerencias(); mostrarSugerenciaActual(); renderModoManual(); })" style="padding:5px 12px;font-size:12px">
+          <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4"/></svg>
+          Actualizar
+        </button>
+      </div>
     </div>
-    <div class="tbl-wrap table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Folio</th>
-            <th>Fuente</th>
-            <th>Fecha</th>
-            <th>Periodo</th>
-            <th>Monto banco</th>
-            <th>Monto sistema</th>
-            <th>Alumno</th>
-            <th>Clasificación</th>
-            <th>Estatus</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="tabla-body">
-          <tr><td colspan="10" class="state-msg">Cargando…</td></tr>
-        </tbody>
-      </table>
+
+    <!-- Sugerencia activa -->
+    <div id="sugerencia-card" style="display:none;margin:8px 20px 4px"></div>
+
+    <div class="split-view">
+
+      <!-- SISTEMA -->
+      <div class="split-col">
+        <div class="split-col-hd">
+          <span class="split-col-title">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="#8a6a20" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="13" y2="15"/></svg>
+            Sistema
+            <span class="split-col-cnt" id="cnt-sistema">0</span>
+          </span>
+          <span id="sel-badge" class="split-col-badge badge-sel" style="display:none">0 sel.</span>
+        </div>
+        <div id="banner-efectivo-sistema" style="display:none;align-items:center;gap:8px;padding:8px 14px;background:var(--sage-bg);border-bottom:1px solid var(--sage);font-size:11.5px;color:#3d7a5a">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Modo cuadre efectivo — solo se muestran pagos en efectivo pendientes
+        </div>
+        <div class="split-col-body" id="lista-sistema"></div>
+      </div>
+
+      <!-- HSBC -->
+      <div class="split-col">
+        <div class="split-col-hd">
+          <span class="split-col-title">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="#3a7ab0" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            HSBC
+            <span class="split-col-cnt" id="cnt-hsbc">0</span>
+          </span>
+        </div>
+        <div class="split-col-body" id="lista-hsbc"></div>
+      </div>
+
+      <!-- SANTANDER -->
+      <div class="split-col">
+        <div class="split-col-hd">
+          <span class="split-col-title">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="#9a3a3a" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            Santander
+            <span class="split-col-cnt" id="cnt-santander">0</span>
+          </span>
+        </div>
+        <div class="split-col-body" id="lista-santander"></div>
+      </div>
+
     </div>
-    <div class="pagination">
-      <span class="pag-info" id="pag-info">—</span>
-      <button class="pag-btn" id="btn-prev" onclick="cambiarPagina(-1)" disabled>
-        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
-      <button class="pag-btn" id="btn-next" onclick="cambiarPagina(1)" disabled>
-        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
-    </div>
-  </div>
+  </div><!-- /vista-manual -->
 
 </main>
-</div>
+</div><!-- /app -->
+
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
 
 <script>
 const SUPABASE_URL      = 'https://kqbeoymmpbnhgwyhtfiq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxYmVveW1tcGJuaGd3eWh0ZmlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMjU1MjIsImV4cCI6MjA5NzgwMTUyMn0.dJory8gvUyWce_7ICn3LVcWW0R-iJtXS8YmJvPjzEtY';
-
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ── Estado global ─────────────────────────────
-let todos      = [];   // todos los registros de Supabase
-let filtrados  = [];   // después de aplicar filtros
-let pagina     = 1;
-const POR_PAG  = 25;
-let modalReg   = null; // registro abierto en modal
+// ── Estado ─────────────────────────────────────
+let todos     = [];
+let filtrados = [];
+let pagina    = 1;
+const POR_PAG = 25;
+let sortCampo = 'fecha';
+let sortDir   = 'desc';
+let modalReg  = null;
 let filtroPorEstatus = null;
 
-// ── Helpers ───────────────────────────────────
-const MXN = n => n != null ? new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n) : '—';
-const FECHA = d => d ? new Date(d).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+// Manual mode state
+let modoManualActivo = false;
+let desgloseActivo   = null; // { bankId, bankMonto, seleccionados: Set }
+let coincidirActivo  = null; // { bankId, bankMonto, sistemaId: null }
+let microMenuId      = null;
+let transitoId       = null;
+let transitoTipo     = null;
 
-const TAG = {
-  APROBADO:       '<span class="tag tag-ok">Aprobado</span>',
-  PENDIENTE:      '<span class="tag tag-pend">Pendiente</span>',
-  EN_REVISION:    '<span class="tag tag-blue">En revisión</span>',
-  RECHAZADO:      '<span class="tag tag-err">Rechazado</span>',
-  COINCIDE:       '<span class="tag tag-ok">Coincide</span>',
-  AFIL:           '<span class="tag tag-lav">AFIL</span>',
-  SIN_COINCIDENCIA:'<span class="tag tag-err">Sin coincidencia</span>',
-  TRANSITO_SALIENTE:'<span class="tag tag-gray">Tránsito</span>',
+// ── Helpers ────────────────────────────────────
+const MXN = n => n != null
+  ? new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n)
+  : '—';
+const FECHA = d => {
+  if (!d) return '—';
+  // Fechas ISO YYYY-MM-DD: parsear como mediodia local para evitar desfase UTC
+  const iso = String(d).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const date = iso
+    ? new Date(parseInt(iso[1]), parseInt(iso[2]) - 1, parseInt(iso[3]))
+    : new Date(d);
+  return isNaN(date) ? d : date.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
 };
-const tag = v => TAG[v] || `<span class="tag tag-gray">${v||'—'}</span>`;
+
+const TAG_MAP = {
+  APROBADO:              '<span class="tag tag-ok">Aprobado</span>',
+  PENDIENTE:             '<span class="tag tag-pend">Pendiente</span>',
+  EN_REVISION:           '<span class="tag tag-blue">En revisión</span>',
+  RECHAZADO:             '<span class="tag tag-err">Cancelado</span>',
+  COINCIDE:              '<span class="tag tag-ok">Coincide</span>',
+  AFIL:                  '<span class="tag tag-lav">AFIL</span>',
+  SIN_COINCIDENCIA:      '<span class="tag tag-err">Sin coincidencia</span>',
+  TRANSITO_SALIENTE:     '<span class="tag tag-gray">Tránsito sal.</span>',
+  TRANSITO_ANTERIOR:     '<span class="tag tag-tr-ant">Tránsito ant.</span>',
+  TRANSITO_SIGUIENTE:    '<span class="tag tag-tr-sig">Tránsito sig.</span>',
+  DESGLOSE_MANUAL:       '<span class="tag tag-desg">Desglose</span>',
+  DESGLOSE_CON_DIFERENCIA:'<span class="tag tag-diff">Desglose ±dif.</span>',
+};
+const tag = v => TAG_MAP[v] || `<span class="tag tag-gray">${v || '—'}</span>`;
+
+const GRUPO_LABELS = {
+  TRANSITO_SALIENTE:    'Tránsito saliente',
+  SIN_COINCIDENCIA:     'Sin coincidencia',
+  AFIL:                 'AFIL',
+  TRANSITO_ANTERIOR:    'Tránsito mes anterior',
+  TRANSITO_SIGUIENTE:   'Tránsito mes siguiente',
+  COINCIDE:             'Coincide',
+};
 
 function toast(msg, tipo = 'ok') {
   const t = document.getElementById('toast');
@@ -476,18 +1088,18 @@ function toast(msg, tipo = 'ok') {
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-// ── Conexión ──────────────────────────────────
+// ── Conexión ───────────────────────────────────
 async function initConexion() {
   try {
     const { error } = await db.from('conciliaciones').select('id').limit(1);
     const ok = !error;
-    document.getElementById('connDot').className   = `conn-dot ${ok ? 'ok' : 'err'}`;
+    document.getElementById('connDot').className    = `conn-dot ${ok ? 'ok' : 'err'}`;
     document.getElementById('connLabel').textContent = ok ? 'Conectado' : 'Sin conexión';
     return ok;
   } catch { return false; }
 }
 
-// ── Carga de datos ────────────────────────────
+// ── Carga de datos ──────────────────────────────
 async function cargarDatos() {
   document.getElementById('tabla-body').innerHTML =
     '<tr><td colspan="10" class="state-msg">Cargando…</td></tr>';
@@ -504,9 +1116,9 @@ async function cargarDatos() {
   }
 
   todos = data;
+  detectarDuplicados();
 
-  // KPIs
-  const cnt = { PENDIENTE:0, APROBADO:0, EN_REVISION:0, RECHAZADO:0 };
+  const cnt = { PENDIENTE: 0, APROBADO: 0, EN_REVISION: 0, RECHAZADO: 0 };
   todos.forEach(r => { if (cnt[r.estatus] !== undefined) cnt[r.estatus]++; });
   document.getElementById('k-total').textContent = todos.length;
   document.getElementById('k-pend').textContent  = cnt.PENDIENTE;
@@ -514,32 +1126,58 @@ async function cargarDatos() {
   document.getElementById('k-revi').textContent  = cnt.EN_REVISION;
   document.getElementById('k-rech').textContent  = cnt.RECHAZADO;
 
-  // Opciones de periodo
+  // Alerta de folios incongruentes en Aprobados (folio numérico menor a 50000)
+  const foliosIncongruentes = todos.filter(r =>
+    r.estatus === 'APROBADO' && r.folio && /^\d+$/.test(r.folio) && parseInt(r.folio) < 50000
+  );
+  const alertEl = document.getElementById('alerta-folio-incongruente');
+  if (alertEl) {
+    if (foliosIncongruentes.length > 0) {
+      alertEl.textContent = `⚠ ${foliosIncongruentes.length} folio${foliosIncongruentes.length > 1 ? 's' : ''} aprobado${foliosIncongruentes.length > 1 ? 's' : ''} con número incongruente`;
+      alertEl.style.display = 'block';
+    } else {
+      alertEl.style.display = 'none';
+    }
+  }
+
   const periodos = [...new Set(todos.map(r => r.periodo).filter(Boolean))].sort().reverse();
-  const sel = document.getElementById('f-periodo');
-  const valActual = sel.value;
-  sel.innerHTML = '<option value="">Todos</option>' +
-    periodos.map(p => `<option value="${p}" ${p===valActual?'selected':''}>${p}</option>`).join('');
+
+  // Normal view period filter
+  const selN = document.getElementById('f-periodo');
+  const valN = selN.value;
+  selN.innerHTML = '<option value="">Todos</option>' +
+    periodos.map(p => `<option value="${p}" ${p === valN ? 'selected' : ''}>${p}</option>`).join('');
+
+  // Manual view period filter
+  const selM = document.getElementById('m-periodo');
+  const valM = selM.value;
+  selM.innerHTML = '<option value="">Todos</option>' +
+    periodos.map(p => `<option value="${p}" ${p === valM ? 'selected' : ''}>${p}</option>`).join('');
 
   aplicarFiltros();
 }
 
-// ── Filtros ───────────────────────────────────
+// ── Filtros (vista normal) ──────────────────────
 function aplicarFiltros() {
-  const busq   = document.getElementById('busqueda').value.toLowerCase();
-  const fuente = document.getElementById('f-fuente').value;
-  const periodo= document.getElementById('f-periodo').value;
-  const clasif = document.getElementById('f-clasif').value;
+  const busq      = document.getElementById('busqueda').value.toLowerCase();
+  const fuente    = document.getElementById('f-fuente').value;
+  const periodo   = document.getElementById('f-periodo').value;
+  const clasif    = document.getElementById('f-clasif').value;
+  const formaPago = document.getElementById('f-forma-pago').value;
 
   filtrados = todos.filter(r => {
     if (filtroPorEstatus && r.estatus !== filtroPorEstatus) return false;
-    if (fuente  && r.fuente        !== fuente)  return false;
-    if (periodo && r.periodo       !== periodo) return false;
-    if (clasif  && r.clasificacion !== clasif)  return false;
+    if (fuente && r.fuente !== fuente) return false;
+    if (periodo && r.periodo !== periodo) return false;
+    if (formaPago && r.forma_pago !== formaPago) return false;
+    if (clasif === 'FOLIO_INCONGRUENTE') {
+      if (!(r.folio && /^\d+$/.test(r.folio) && parseInt(r.folio) < 50000)) return false;
+    } else if (clasif && r.clasificacion !== clasif) return false;
     if (busq) {
-      const haystack = [r.folio, r.nombre, r.referencia, r.clave_alumno, r.descripcion]
+      const montoStr = [r.monto_banco, r.monto_sistema].filter(v => v != null).map(v => String(v)).join(' ');
+      const h = [r.folio, r.nombre, r.referencia, r.clave_alumno, r.descripcion, montoStr]
         .filter(Boolean).join(' ').toLowerCase();
-      if (!haystack.includes(busq)) return false;
+      if (!h.includes(busq)) return false;
     }
     return true;
   });
@@ -555,38 +1193,109 @@ function filtrarPorEstatus(estatus, el) {
   aplicarFiltros();
 }
 
+function filtrarFoliosIncongruentes() {
+  filtroPorEstatus = 'APROBADO';
+  document.querySelectorAll('.kpi').forEach(k => k.classList.remove('selected'));
+  document.getElementById('kpi-apro')?.classList.add('selected');
+  filtrados = todos.filter(r =>
+    r.estatus === 'APROBADO' && r.folio && /^\d+$/.test(r.folio) && parseInt(r.folio) < 50000
+  );
+  pagina = 1;
+  renderTabla();
+}
+
 function limpiarFiltros() {
   filtroPorEstatus = null;
-  document.getElementById('busqueda').value = '';
-  document.getElementById('f-fuente').value  = '';
-  document.getElementById('f-periodo').value = '';
-  document.getElementById('f-clasif').value  = '';
+  document.getElementById('busqueda').value       = '';
+  document.getElementById('f-fuente').value       = '';
+  document.getElementById('f-periodo').value      = '';
+  document.getElementById('f-clasif').value       = '';
+  document.getElementById('f-forma-pago').value   = '';
   document.querySelectorAll('.kpi').forEach(k => k.classList.remove('selected'));
   aplicarFiltros();
 }
 
-// ── Render tabla ──────────────────────────────
-function renderTabla() {
-  const total = filtrados.length;
-  const inicio = (pagina - 1) * POR_PAG;
-  const pagina_items = filtrados.slice(inicio, inicio + POR_PAG);
+// ── Ordenamiento ───────────────────────────────
+function toggleSort(campo) {
+  if (sortCampo === campo) {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortCampo = campo;
+    sortDir   = campo === 'fecha' ? 'desc' : 'asc';
+  }
+  pagina = 1;
+  renderTabla();
+}
 
-  document.getElementById('panel-count').textContent =
-    `${total} movimiento${total !== 1 ? 's' : ''}`;
+function aplicarSort(arr) {
+  const dir = sortDir === 'asc' ? 1 : -1;
+  return [...arr].sort((a, b) => {
+    let va = a[sortCampo] ?? '';
+    let vb = b[sortCampo] ?? '';
+    if (sortCampo === 'fecha') {
+      // YYYY-MM-DD ordena correctamente como string
+    } else if (sortCampo === 'folio') {
+      va = parseInt(va) || 0; vb = parseInt(vb) || 0;
+      return (va - vb) * dir;
+    } else if (sortCampo === 'monto_banco') {
+      va = parseFloat(va) || 0; vb = parseFloat(vb) || 0;
+      return (va - vb) * dir;
+    }
+    return String(va).localeCompare(String(vb)) * dir;
+  });
+}
+
+function actualizarIconosSort() {
+  ['folio','fecha','periodo','monto_banco'].forEach(c => {
+    const el = document.getElementById(`sico-${c}`);
+    if (!el) return;
+    el.textContent = sortCampo === c ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ' ↕';
+  });
+}
+
+// ── Tabla ──────────────────────────────────────
+function renderTabla() {
+  const ordenados = aplicarSort(filtrados);
+  actualizarIconosSort();
+  const total  = ordenados.length;
+  const inicio = (pagina - 1) * POR_PAG;
+  const slice  = ordenados.slice(inicio, inicio + POR_PAG);
+
+  document.getElementById('panel-count').textContent = `${total} movimiento${total !== 1 ? 's' : ''}`;
   document.getElementById('pag-info').textContent =
-    total > POR_PAG ? `${inicio+1}–${Math.min(inicio+POR_PAG, total)} de ${total}` : `${total} registros`;
+    total > POR_PAG ? `${inicio + 1}–${Math.min(inicio + POR_PAG, total)} de ${total}` : `${total} registros`;
   document.getElementById('btn-prev').disabled = pagina <= 1;
   document.getElementById('btn-next').disabled = inicio + POR_PAG >= total;
 
-  if (!pagina_items.length) {
+  if (!slice.length) {
     document.getElementById('tabla-body').innerHTML =
       '<tr><td colspan="10" class="state-msg">Sin registros con los filtros aplicados.</td></tr>';
     return;
   }
 
-  document.getElementById('tabla-body').innerHTML = pagina_items.map(r => `
-    <tr onclick="abrirModal('${r.id}')">
-      <td style="font-family:monospace;font-size:11.5px">${r.folio || '—'}</td>
+  document.getElementById('tabla-body').innerHTML = slice.map(r => {
+    const esDiff = r.clasificacion === 'DESGLOSE_CON_DIFERENCIA';
+    const esCancelado = r.estatus === 'RECHAZADO';
+    const esIncongruente = r.estatus === 'APROBADO' && r.folio && /^\d+$/.test(r.folio) && parseInt(r.folio) < 50000;
+    const rowStyle = esDiff ? 'background:#fffbf0' : esCancelado ? 'background:#fff5f5' : esIncongruente ? 'background:#fffbeb' : '';
+
+    // Extraer folio de conversión de las notas (ej. "CANCELADO POR: CONVERTIDO A: FACTURA-E 54557" → "→ FACTURA-E 54557")
+    let conversionHtml = '';
+    if (esCancelado && r.notas) {
+      const match = r.notas.match(/CONVERTIDO A:\s*(.+)/i);
+      const destino = match ? match[1].trim() : r.notas.replace(/^CANCELADO POR:\s*/i, '');
+      conversionHtml = `<div style="font-size:10px;color:var(--rose);margin-top:2px;font-family:monospace">→ ${destino}</div>`;
+    }
+
+    const dupBadge = duplicadosAdvertencia.has(r.id)
+      ? `<div class="dup-warn" title="Folio, monto y clave ya están en un registro APROBADO — probable duplicado">⚠ Duplicado</div>`
+      : duplicadosSugerencia.has(r.id)
+      ? `<div class="dup-sug" title="Algunos campos coinciden con un registro APROBADO — revisar antes de conciliar">? Revisar</div>`
+      : '';
+
+    return `
+    <tr onclick="abrirModal('${r.id}')" style="${rowStyle}">
+      <td style="font-family:monospace;font-size:11.5px">${r.folio || '—'}${esIncongruente ? '<span title="Folio con número incongruente — posible error de cancelación" style="margin-left:5px;color:#b45309;font-size:10px">⚠</span>' : ''}${conversionHtml}</td>
       <td>${r.fuente || '—'}</td>
       <td>${FECHA(r.fecha)}</td>
       <td>${r.periodo || '—'}</td>
@@ -594,41 +1303,55 @@ function renderTabla() {
       <td style="text-align:right">${MXN(r.monto_sistema)}</td>
       <td>${r.nombre || '—'}</td>
       <td>${tag(r.clasificacion)}</td>
-      <td>${tag(r.estatus)}</td>
+      <td><div>${tag(r.estatus)}</div>${dupBadge}</td>
       <td>
         <div class="row-actions" onclick="event.stopPropagation()">
-          <button class="act-btn btn-ok"  onclick="actualizarEstatus('${r.id}','APROBADO')">✓</button>
-          <button class="act-btn btn-err" onclick="actualizarEstatus('${r.id}','RECHAZADO')">✕</button>
+          <button class="act-btn btn-ok"    onclick="actualizarEstatus('${r.id}','APROBADO')">✓</button>
+          <button class="act-btn btn-err"   onclick="actualizarEstatus('${r.id}','RECHAZADO')">✕</button>
+          <button class="act-btn" onclick="abrirTransitoNormal('${r.id}')" style="border-color:var(--amber);color:#7a4e08;background:var(--amber-bg)" title="Marcar tránsito">⏱</button>
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 function cambiarPagina(delta) {
   pagina = Math.max(1, pagina + delta);
   renderTabla();
-  document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' });
+  document.querySelector('.vista-normal').scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ── Acciones estatus ──────────────────────────
-async function actualizarEstatus(id, estatus, notas = null) {
-  const payload = { estatus, revisado_at: new Date().toISOString(), revisado_por: 'Administrador' };
-  if (notas !== null) payload.notas = notas;
-
+// ── Actualizar estatus ──────────────────────────
+async function actualizarEstatus(id, estatus, extra = {}) {
+  const payload = {
+    estatus,
+    revisado_at: new Date().toISOString(),
+    revisado_por: 'Administrador',
+    ...extra
+  };
   const { error } = await db.from('conciliaciones').update(payload).eq('id', id);
   if (error) { toast('Error al actualizar', 'err'); return false; }
-  toast(estatus === 'APROBADO' ? 'Movimiento aprobado' :
-        estatus === 'RECHAZADO' ? 'Movimiento rechazado' : 'Estatus actualizado');
+  const msgs = {
+    APROBADO: 'Movimiento aprobado', RECHAZADO: 'Movimiento rechazado',
+    EN_REVISION: 'Marcado para revisión',
+  };
+  toast(msgs[estatus] || 'Estatus actualizado');
+  const paginaGuardada = pagina;
   await cargarDatos();
+  if (!modoManualActivo) { pagina = paginaGuardada; renderTabla(); }
   return true;
 }
 
-// ── Modal detalle ─────────────────────────────
+// ── Rol activo (en producción vendrá de sesión/auth) ──────
+const ROL_ACTUAL = 'super_admin'; // 'super_admin' | 'operador'
+
+// ── Modal detalle ──────────────────────────────
 function abrirModal(id) {
   modalReg = todos.find(r => r.id === id);
   if (!modalReg) return;
   const r = modalReg;
-  document.getElementById('modal-title').textContent = `Movimiento — ${r.folio || r.referencia || r.id.slice(0,8)}`;
+  document.getElementById('modal-title').textContent =
+    `Movimiento — ${r.folio || r.referencia || r.id.slice(0, 8)}`;
   document.getElementById('m-folio').textContent    = r.folio || '—';
   document.getElementById('m-fuente').textContent   = r.fuente || '—';
   document.getElementById('m-fecha').textContent    = FECHA(r.fecha);
@@ -643,7 +1366,64 @@ function abrirModal(id) {
   document.getElementById('m-desc').textContent     = r.descripcion || '—';
   document.getElementById('m-clasif').innerHTML     = tag(r.clasificacion);
   document.getElementById('modal-notas').value      = r.notas || '';
+
+  // Botón editar folio solo para super admin
+  const btnEdit = document.getElementById('btn-edit-folio');
+  btnEdit.style.display = ROL_ACTUAL === 'super_admin' ? 'inline-flex' : 'none';
+  // Asegurarse que el panel de edición esté cerrado al abrir el modal
+  document.getElementById('folio-field-view').style.display = '';
+  document.getElementById('folio-field-edit').style.display = 'none';
+
   document.getElementById('overlay').classList.add('open');
+}
+
+// ── Edición de folio (solo super admin) ────────
+function toggleEditFolio() {
+  if (ROL_ACTUAL !== 'super_admin') return;
+  const viewEl = document.getElementById('folio-field-view');
+  const editEl = document.getElementById('folio-field-edit');
+  const isOpen = editEl.style.display !== 'none';
+  viewEl.style.display = isOpen ? '' : 'none';
+  editEl.style.display = isOpen ? 'none' : '';
+  if (!isOpen) {
+    const inp = document.getElementById('inp-folio-edit');
+    inp.value = (modalReg?.folio && modalReg.folio !== '—') ? modalReg.folio : '';
+    inp.focus();
+    inp.select();
+  }
+}
+
+async function guardarFolioEdit() {
+  if (ROL_ACTUAL !== 'super_admin' || !modalReg) return;
+  const nuevoFolio = document.getElementById('inp-folio-edit').value.trim();
+  if (!nuevoFolio) { alert('El folio no puede estar vacío.'); return; }
+  if (nuevoFolio === modalReg.folio) { toggleEditFolio(); return; }
+
+  const folioAnterior = modalReg.folio || '(sin folio)';
+  const ahora = new Date().toLocaleString('es-MX', { dateStyle:'short', timeStyle:'short' });
+  const notaAudit = `[${ahora}] Folio corregido: ${folioAnterior} → ${nuevoFolio}`;
+  const notasActuales = document.getElementById('modal-notas').value.trim();
+  const notasNuevas = notasActuales ? `${notasActuales}\n${notaAudit}` : notaAudit;
+
+  try {
+    const { error } = await db.from('conciliaciones')
+      .update({ folio: nuevoFolio, notas: notasNuevas })
+      .eq('id', modalReg.id);
+    if (error) throw error;
+
+    // Actualizar estado local
+    modalReg.folio = nuevoFolio;
+    const reg = todos.find(r => r.id === modalReg.id);
+    if (reg) reg.folio = nuevoFolio;
+
+    document.getElementById('m-folio').textContent = nuevoFolio;
+    document.getElementById('modal-title').textContent = `Movimiento — ${nuevoFolio}`;
+    document.getElementById('modal-notas').value = notasNuevas;
+    toggleEditFolio();
+    renderTabla();
+  } catch(e) {
+    alert('Error al guardar: ' + (e.message || e));
+  }
 }
 
 function closeModal() {
@@ -654,7 +1434,12 @@ function closeModal() {
 async function accionModal(estatus) {
   if (!modalReg) return;
   const notas = document.getElementById('modal-notas').value.trim();
-  const ok = await actualizarEstatus(modalReg.id, estatus, notas || null);
+  if (estatus === 'TRANSITO_MODAL') {
+    closeModal();
+    abrirTransitoNormal(modalReg.id);
+    return;
+  }
+  const ok = await actualizarEstatus(modalReg.id, estatus, notas ? { notas } : {});
   if (ok) closeModal();
 }
 
@@ -662,20 +1447,835 @@ document.getElementById('overlay').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
 });
 
-// ── Sidebar móvil ─────────────────────────────
-function toggleSidebar(){
+// ── Marcar tránsito (vista normal) ────────────
+function abrirTransitoNormal(id) {
+  transitoId = id;
+  transitoTipo = null;
+  document.getElementById('opt-anterior').className = 'transit-opt';
+  document.getElementById('opt-siguiente').className = 'transit-opt';
+  document.getElementById('btn-confirmar-transito').disabled = true;
+  document.getElementById('overlay-transito').classList.add('open');
+}
+
+function seleccionarTransito(tipo) {
+  transitoTipo = tipo;
+  document.getElementById('opt-anterior').className =
+    'transit-opt' + (tipo === 'MES_ANTERIOR' ? ' sel-ant' : '');
+  document.getElementById('opt-siguiente').className =
+    'transit-opt' + (tipo === 'MES_SIGUIENTE' ? ' sel-sig' : '');
+  document.getElementById('btn-confirmar-transito').disabled = false;
+}
+
+async function confirmarTransito() {
+  if (!transitoId || !transitoTipo) return;
+  const clasif = transitoTipo === 'MES_ANTERIOR' ? 'TRANSITO_ANTERIOR' : 'TRANSITO_SIGUIENTE';
+  const { error } = await db.from('conciliaciones').update({
+    clasificacion: clasif,
+    revisado_at: new Date().toISOString(),
+    revisado_por: 'Administrador',
+  }).eq('id', transitoId);
+
+  if (error) { toast('Error al marcar tránsito', 'err'); return; }
+  toast('Movimiento marcado como tránsito');
+  cerrarTransito();
+  await cargarDatos();
+  if (modoManualActivo) renderModoManual();
+}
+
+function cerrarTransito() {
+  document.getElementById('overlay-transito').classList.remove('open');
+  transitoId = null;
+  transitoTipo = null;
+}
+
+document.getElementById('overlay-transito').addEventListener('click', e => {
+  if (e.target === e.currentTarget) cerrarTransito();
+});
+
+// ── MODO MANUAL ────────────────────────────────
+function toggleModoManual() {
+  modoManualActivo = !modoManualActivo;
+  const main   = document.getElementById('main-content');
+  const normal = document.getElementById('vista-normal');
+  const manual = document.getElementById('vista-manual');
+  const btn    = document.getElementById('btn-manual');
+
+  if (modoManualActivo) {
+    main.classList.add('modo-manual');
+    normal.classList.add('oculta');
+    manual.classList.add('activa');
+    btn.className = 'btn btn-manual-on';
+    btn.innerHTML = `<svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span class="btn-txt-short">Salir del modo manual</span>`;
+    sugerenciasActivas = true;
+    renderModoManual();
+    generarSugerencias();
+    mostrarSugerenciaActual();
+  } else {
+    if (desgloseActivo) cancelarDesglose();
+    if (coincidirActivo) cancelarCoincidir();
+    main.classList.remove('modo-manual');
+    normal.classList.remove('oculta');
+    manual.classList.remove('activa');
+    btn.className = 'btn btn-ghost';
+    btn.innerHTML = `<svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="10" rx="1"/><rect x="14" y="17" width="7" height="4" rx="1"/></svg><span class="btn-txt-short">Conciliación manual</span>`;
+  }
+}
+
+function buscarManual() { renderModoManual(); }
+
+function hl(text, sq) {
+  if (!sq || !text) return text || '';
+  const escaped = sq.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return String(text).replace(new RegExp(`(${escaped})`, 'gi'), '<mark class="search-hl">$1</mark>');
+}
+
+const normClave = v => v ? String(parseInt(v, 10) || v) : '';
+
+function coincideManual(r, sq) {
+  if (!sq) return true;
+  const montoStr = [r.monto_banco, r.monto_sistema].filter(v => v != null).map(String).join(' ');
+  // Incluir clave con y sin ceros iniciales para que 740 encuentre 0740 y viceversa
+  const claveNorm = normClave(r.clave_alumno);
+  const haystack = [r.folio, r.nombre, r.referencia, r.clave_alumno, claveNorm, r.descripcion, r.concepto, montoStr]
+    .filter(Boolean).join(' ').toLowerCase();
+  return haystack.includes(sq.toLowerCase());
+}
+
+function renderModoManual() {
+  const periodoFiltro = document.getElementById('m-periodo').value;
+  const sq = (document.getElementById('m-busqueda')?.value || '').trim().toLowerCase();
+
+  const pendientes = todos.filter(r => {
+    if (r.estatus !== 'PENDIENTE') return false;
+    if (periodoFiltro && r.periodo !== periodoFiltro) return false;
+    return true;
+  });
+
+  const esEfectivo = r => r.forma_pago?.toUpperCase() === 'EFECTIVO';
+  const sistema   = cuadreEfectivoActivo
+    ? pendientes.filter(r => r.fuente === 'SISTEMA' && esEfectivo(r))
+    : pendientes.filter(r => r.fuente === 'SISTEMA');
+  const hsbc      = pendientes.filter(r => r.fuente === 'HSBC');
+  const santander = pendientes.filter(r => r.fuente === 'SANTANDER');
+
+  document.getElementById('cnt-sistema').textContent   = sistema.length;
+  document.getElementById('cnt-hsbc').textContent      = hsbc.length;
+  document.getElementById('cnt-santander').textContent = santander.length;
+
+  // Banner modo cuadre efectivo en columna sistema
+  const bannerEl = document.getElementById('banner-efectivo-sistema');
+  if (bannerEl) bannerEl.style.display = cuadreEfectivoActivo ? 'flex' : 'none';
+
+  renderColumna('lista-sistema', sistema, 'sistema', sq);
+  renderColumna('lista-hsbc', hsbc, 'banco', sq);
+  renderColumna('lista-santander', santander, 'banco', sq);
+
+  // Actualizar botón sugerencias
+  const btnSug = document.getElementById('btn-sug-toggle');
+  if (btnSug) btnSug.style.background = sugerenciasActivas ? 'var(--sky-bg)' : '';
+  mostrarSugerenciaActual();
+
+  actualizarBadgeSeleccion();
+}
+
+function renderColumna(containerId, registros, tipo, sq) {
+  const el = document.getElementById(containerId);
+  const filtrados = sq ? registros.filter(r => coincideManual(r, sq)) : registros;
+
+  if (!filtrados.length) {
+    el.innerHTML = sq
+      ? `<div class="col-empty">Sin resultados para "<b>${sq}</b>"</div>`
+      : '<div class="col-empty">Sin movimientos pendientes</div>';
+    return;
+  }
+
+  const grupos = {};
+  filtrados.forEach(r => {
+    const k = r.clasificacion || 'OTROS';
+    if (!grupos[k]) grupos[k] = [];
+    grupos[k].push(r);
+  });
+
+  let html = '';
+  for (const [clas, rows] of Object.entries(grupos)) {
+    html += `<div class="col-group-label">${GRUPO_LABELS[clas] || clas} <span class="col-group-cnt">${rows.length}</span></div>`;
+    rows.forEach(r => {
+      html += tipo === 'sistema' ? renderCardSistema(r, sq) : renderCardBanco(r, sq);
+    });
+  }
+  el.innerHTML = html;
+}
+
+function renderCardSistema(r, sq) {
+  const enDesglose  = !!desgloseActivo;
+  const enCoincidir = !!coincidirActivo;
+  const sel         = desgloseActivo && desgloseActivo.seleccionados.has(r.id);
+  const selCoin     = coincidirActivo && coincidirActivo.sistemaId === r.id;
+  const claveDisplay = r.clave_alumno ? `<span class="card-clave" title="Clave alumno">${hl(r.clave_alumno, sq)}</span>` : '';
+
+  let modoClass = '', onclick = `abrirModal('${r.id}')`, checkHtml = '';
+  if (enDesglose) {
+    modoClass = ` selectable${sel ? ' seleccionado' : ''}`;
+    onclick   = `toggleSeleccion('${r.id}')`;
+    checkHtml = `<div class="card-check">${sel ? '✓' : ''}</div>`;
+  } else if (enCoincidir) {
+    modoClass = ` selectable${selCoin ? ' seleccionado' : ''}`;
+    onclick   = `toggleCoincidir('${r.id}')`;
+    checkHtml = `<div class="card-check">${selCoin ? '✓' : ''}</div>`;
+  }
+
+  const dupBadgeSis = duplicadosAdvertencia.has(r.id)
+    ? `<div class="dup-warn" title="Folio, monto y clave ya están APROBADOS — probable duplicado">⚠ Duplicado</div>`
+    : duplicadosSugerencia.has(r.id)
+    ? `<div class="dup-sug" title="Coincide parcialmente con un registro APROBADO — revisar">? Revisar</div>`
+    : '';
+
+  return `
+    <div class="mov-card${modoClass}${sq ? ' search-match' : ''}"
+         id="card-${r.id}"
+         onclick="${onclick}">
+      ${checkHtml}
+      <div class="card-body">
+        <div class="card-r1">
+          <span class="card-folio">${hl(r.folio || '—', sq)}</span>
+          <span class="card-monto">${MXN(r.monto_sistema)}</span>
+        </div>
+        <div class="card-r2">
+          ${claveDisplay}
+          <span class="card-nombre">${hl(r.nombre || '—', sq)}</span>
+        </div>
+        <div class="card-r3">
+          <span class="card-periodo">${r.periodo || '—'}</span>
+          <span class="card-concepto">${r.concepto || '—'}</span>
+        </div>
+        ${dupBadgeSis ? `<div style="margin-top:4px">${dupBadgeSis}</div>` : ''}
+      </div>
+    </div>`;
+}
+
+function renderCardBanco(r, sq) {
+  const esActivo = desgloseActivo && desgloseActivo.bankId === r.id;
+  const esSantander = r.fuente === 'SANTANDER';
+
+  // Santander: mostrar clave (4 dígitos del concepto) y referencia bancaria
+  // HSBC: mostrar folio del sistema
+  let idLine, subLine;
+  if (esSantander) {
+    const claveAlumno = r.clave_alumno ? `<span class="card-clave" title="Clave alumno (concepto)">${hl(normClave(r.clave_alumno), sq)}</span>` : '';
+    const refDisplay  = r.referencia ? `<span class="card-ref" title="Referencia bancaria">${hl(r.referencia, sq)}</span>` : '';
+    idLine  = `${claveAlumno}${claveAlumno && refDisplay ? '<span style="color:var(--ink-4);margin:0 4px">·</span>' : ''}${refDisplay}`;
+    subLine = `<span class="card-desc">${hl(r.descripcion || '—', sq)}</span>`;
+  } else {
+    idLine  = `<span class="card-folio">${hl(r.folio || r.referencia || '—', sq)}</span>`;
+    subLine = `<span class="card-desc">${hl(r.descripcion || r.nombre || '—', sq)}</span>`;
+  }
+
+  const dupBadgeBanco = duplicadosAdvertencia.has(r.id)
+    ? `<div class="dup-warn" title="Folio, monto y clave ya están APROBADOS — probable duplicado">⚠ Duplicado</div>`
+    : duplicadosSugerencia.has(r.id)
+    ? `<div class="dup-sug" title="Coincide parcialmente con un registro APROBADO — revisar">? Revisar</div>`
+    : '';
+
+  return `
+    <div class="mov-card banco-card${esActivo ? ' banco-activo' : ''}${sq ? ' search-match' : ''}" id="card-${r.id}">
+      <div class="card-body">
+        <div class="card-r1">
+          <div style="display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden">${idLine}</div>
+          <span class="card-monto">${MXN(r.monto_banco)}</span>
+        </div>
+        <div class="card-r2">${subLine}</div>
+        <div class="card-r3">
+          <span class="card-periodo">${r.fecha || r.periodo || '—'}</span>
+          ${tag(r.clasificacion)}
+        </div>
+        ${dupBadgeBanco ? `<div style="margin-top:4px">${dupBadgeBanco}</div>` : ''}
+      </div>
+      <button class="tres-puntos" onclick="mostrarMicroMenu('${r.id}', event)" title="Opciones">⋯</button>
+    </div>`;
+}
+
+// ── Micro-menú ─────────────────────────────────
+function mostrarMicroMenu(id, event) {
+  event.stopPropagation();
+  microMenuId = id;
+  const reg = todos.find(r => r.id === id);
+  document.getElementById('mm-item-efectivo').style.display =
+    (reg && reg.clasificacion === 'EFECTIVO_BANCO') ? 'flex' : 'none';
+  const menu = document.getElementById('micro-menu');
+  menu.classList.add('open');
+
+  const rect = event.currentTarget.getBoundingClientRect();
+  let top  = rect.bottom + 4;
+  let left = rect.right - 215;
+
+  if (left < 8) left = 8;
+  if (top + 160 > window.innerHeight) top = rect.top - 164;
+
+  menu.style.top  = top + 'px';
+  menu.style.left = left + 'px';
+}
+
+function cerrarMicroMenu() {
+  document.getElementById('micro-menu').classList.remove('open');
+  microMenuId = null;
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#micro-menu') && !e.target.closest('.tres-puntos')) {
+    cerrarMicroMenu();
+  }
+});
+
+async function accionMenu(accion) {
+  const id = microMenuId;
+  cerrarMicroMenu();
+  if (!id) return;
+
+  if (accion === 'detalle') {
+    abrirModal(id);
+    return;
+
+  } else if (accion === 'coincidir') {
+    if (desgloseActivo || coincidirActivo) {
+      toast('Cancela la operación en curso primero.', 'err');
+      return;
+    }
+    const reg = todos.find(r => r.id === id);
+    if (!reg) return;
+    coincidirActivo = { bankId: id, bankMonto: parseFloat(reg.monto_banco) || 0, sistemaId: null };
+    document.getElementById('cb-banco').textContent = MXN(coincidirActivo.bankMonto);
+    document.getElementById('cb-sistema').textContent = '—';
+    document.getElementById('cb-diff-label').textContent = '—';
+    document.getElementById('btn-confirmar-coincidir').disabled = true;
+    document.getElementById('coincidir-bar').classList.add('open');
+    renderModoManual();
+
+  } else if (accion === 'desglose') {
+    if (desgloseActivo) {
+      toast('Ya hay un desglose en curso. Cancélalo primero.', 'err');
+      return;
+    }
+    const reg = todos.find(r => r.id === id);
+    if (!reg) return;
+    desgloseActivo = {
+      bankId: id,
+      bankMonto: parseFloat(reg.monto_banco) || 0,
+      seleccionados: new Set(),
+    };
+    actualizarBarraDesglose();
+    document.getElementById('desglose-bar').classList.add('open');
+    renderModoManual();
+
+  } else if (accion === 'transito') {
+    abrirTransitoNormal(id);
+
+  } else if (accion === 'cuadrar-efectivo') {
+    abrirCuadreEfectivo(id);
+
+  } else if (accion === 'revision') {
+    const { error } = await db.from('conciliaciones').update({
+      estatus: 'EN_REVISION',
+      revisado_at: new Date().toISOString(),
+      revisado_por: 'Administrador',
+    }).eq('id', id);
+    if (error) { toast('Error', 'err'); return; }
+    toast('Marcado para revisión');
+    await cargarDatos();
+    renderModoManual();
+  }
+}
+
+// ── Cuadre de Efectivo ─────────────────────────
+let cuadreEfectivoActivo = null;
+
+function abrirCuadreEfectivo(id) {
+  const reg = todos.find(r => r.id === id);
+  if (!reg || reg.clasificacion !== 'EFECTIVO_BANCO') {
+    toast('Este movimiento no es un depósito en efectivo bancario.', 'err');
+    return;
+  }
+  cuadreEfectivoActivo = { bankId: id, bankMonto: parseFloat(reg.monto_banco) || 0, seleccionados: new Set() };
+
+  const fechaBanco = reg.fecha || new Date().toISOString().split('T')[0];
+  const dDesde = new Date(fechaBanco + 'T00:00:00');
+  dDesde.setDate(dDesde.getDate() - 3);
+  document.getElementById('ep-desde').value = dDesde.toISOString().split('T')[0];
+  document.getElementById('ep-hasta').value = fechaBanco;
+  document.getElementById('ep-banco-info').textContent =
+    'Santander — ' + MXN(cuadreEfectivoActivo.bankMonto) + ' — ' + fechaBanco;
+  document.getElementById('ep-monto-banco').textContent = MXN(cuadreEfectivoActivo.bankMonto);
+  document.getElementById('ep-suma-sistema').textContent = '$0.00';
+  document.getElementById('ep-diff').textContent = '';
+  document.getElementById('ep-confirmar').disabled = true;
+  document.getElementById('efectivo-panel').classList.add('open');
+  filtrarEfectivo();
+}
+
+function filtrarEfectivo() {
+  if (!cuadreEfectivoActivo) return;
+  const desde = document.getElementById('ep-desde').value;
+  const hasta  = document.getElementById('ep-hasta').value;
+  if (!desde || !hasta) return;
+
+  const candidatos = todos.filter(r =>
+    r.fuente === 'SISTEMA' &&
+    r.forma_pago?.toUpperCase() === 'EFECTIVO' &&
+    r.fecha >= desde && r.fecha <= hasta
+  );
+
+  const lista = document.getElementById('ep-lista');
+  if (!candidatos.length) {
+    lista.innerHTML = '<div class="ep-empty">Sin movimientos de efectivo en ese rango.</div>';
+    actualizarTotalesEfectivo();
+    return;
+  }
+
+  lista.innerHTML = candidatos.map(r => {
+    const sel = cuadreEfectivoActivo.seleccionados.has(r.id);
+    return `<div class="ep-item${sel ? ' sel' : ''}" id="ep-item-${r.id}" onclick="toggleEfectivoItem('${r.id}')">
+      <div class="ep-check">${sel ? '✓' : ''}</div>
+      <div class="ep-item-info">
+        <span class="ep-item-nombre">${r.nombre || '—'}</span>
+        <span class="ep-item-meta">${r.concepto || '—'} · ${r.fecha || ''}</span>
+      </div>
+      <div class="ep-item-monto">${MXN(parseFloat(r.monto_sistema) || 0)}</div>
+    </div>`;
+  }).join('');
+
+  actualizarTotalesEfectivo();
+}
+
+function toggleEfectivoItem(id) {
+  if (!cuadreEfectivoActivo) return;
+  if (cuadreEfectivoActivo.seleccionados.has(id)) {
+    cuadreEfectivoActivo.seleccionados.delete(id);
+  } else {
+    cuadreEfectivoActivo.seleccionados.add(id);
+  }
+  const el = document.getElementById('ep-item-' + id);
+  if (el) {
+    el.classList.toggle('sel', cuadreEfectivoActivo.seleccionados.has(id));
+    el.querySelector('.ep-check').textContent = cuadreEfectivoActivo.seleccionados.has(id) ? '✓' : '';
+  }
+  actualizarTotalesEfectivo();
+}
+
+function actualizarTotalesEfectivo() {
+  if (!cuadreEfectivoActivo) return;
+  const suma = [...cuadreEfectivoActivo.seleccionados].reduce((s, id) => {
+    const r = todos.find(x => x.id === id);
+    return s + (r ? (parseFloat(r.monto_sistema) || 0) : 0);
+  }, 0);
+
+  document.getElementById('ep-suma-sistema').textContent = MXN(suma);
+
+  const diffEl = document.getElementById('ep-diff');
+  const n = cuadreEfectivoActivo.seleccionados.size;
+  if (n === 0) {
+    diffEl.textContent = '';
+    diffEl.className = 'ep-tot-diff';
+  } else {
+    const diff = parseFloat((cuadreEfectivoActivo.bankMonto - suma).toFixed(2));
+    if (diff === 0) {
+      diffEl.textContent = 'Montos exactos ✓';
+      diffEl.className = 'ep-tot-diff exact';
+    } else if (diff > 0) {
+      diffEl.textContent = 'Falta: ' + MXN(diff) + ' en sistema';
+      diffEl.className = 'ep-tot-diff warn';
+    } else {
+      diffEl.textContent = 'Exceso: ' + MXN(Math.abs(diff)) + ' sobre banco';
+      diffEl.className = 'ep-tot-diff over';
+    }
+  }
+
+  document.getElementById('ep-confirmar').disabled = n === 0;
+}
+
+async function confirmarCuadreEfectivo() {
+  if (!cuadreEfectivoActivo || !cuadreEfectivoActivo.seleccionados.size) return;
+  const desde = document.getElementById('ep-desde').value;
+  const hasta  = document.getElementById('ep-hasta').value;
+  const suma = [...cuadreEfectivoActivo.seleccionados].reduce((s, id) => {
+    const r = todos.find(x => x.id === id);
+    return s + (r ? (parseFloat(r.monto_sistema) || 0) : 0);
+  }, 0);
+
+  const ahora = new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
+  const notas = 'Cuadrado ' + ahora + ' — efectivo del ' + desde + ' al ' + hasta +
+    ' · suma sistema: ' + MXN(suma) + ' · banco: ' + MXN(cuadreEfectivoActivo.bankMonto);
+
+  const base = { estatus: 'APROBADO', clasificacion: 'COINCIDE',
+    revisado_at: new Date().toISOString(), revisado_por: 'Administrador', notas };
+
+  const { error } = await db.from('conciliaciones').update(base).eq('id', cuadreEfectivoActivo.bankId);
+  if (error) { toast('Error al guardar banco', 'err'); return; }
+
+  // Aprobar también cada registro de sistema seleccionado
+  const basesSistema = { estatus: 'APROBADO', clasificacion: 'COINCIDE',
+    revisado_at: new Date().toISOString(), revisado_por: 'Administrador' };
+  for (const sid of cuadreEfectivoActivo.seleccionados) {
+    await db.from('conciliaciones').update(basesSistema).eq('id', sid);
+  }
+
+  toast('Efectivo cuadrado ✓ — ' + cuadreEfectivoActivo.seleccionados.size + ' registros vinculados');
+  cerrarCuadreEfectivo();
+  await cargarDatos();
+  renderModoManual();
+}
+
+function cerrarCuadreEfectivo() {
+  cuadreEfectivoActivo = null;
+  document.getElementById('efectivo-panel').classList.remove('open');
+  renderModoManual();
+}
+
+// ── Duplicados ──────────────────────────────────
+let duplicadosAdvertencia = new Set();
+let duplicadosSugerencia  = new Set();
+
+function detectarDuplicados() {
+  duplicadosAdvertencia = new Set();
+  duplicadosSugerencia  = new Set();
+
+  const porFolio = {};
+  todos.forEach(r => {
+    if (!r.folio) return;
+    if (!porFolio[r.folio]) porFolio[r.folio] = [];
+    porFolio[r.folio].push(r);
+  });
+
+  Object.values(porFolio).forEach(registros => {
+    const aprobados = registros.filter(r => r.estatus === 'APROBADO');
+    const pendientes = registros.filter(r => r.estatus === 'PENDIENTE');
+    if (!aprobados.length || !pendientes.length) return;
+
+    pendientes.forEach(pend => {
+      let nivel = 0;
+      aprobados.forEach(apro => {
+        const montoP = parseFloat(pend.monto_banco ?? pend.monto_sistema ?? 0);
+        const montoA = parseFloat(apro.monto_banco ?? apro.monto_sistema ?? 0);
+        const mismoMonto = Math.abs(montoP - montoA) < 0.01;
+        const mismaClave = !!pend.clave_alumno && normClave(pend.clave_alumno) === normClave(apro.clave_alumno);
+        // hora: solo comparar si ambos la tienen
+        const mismaHora = pend.hora && apro.hora ? pend.hora === apro.hora : null;
+
+        // ADVERTENCIA: folio+monto+clave coinciden, y hora también (o no aplica)
+        if (mismoMonto && mismaClave && mismaHora !== false) {
+          nivel = 2;
+        } else if (mismoMonto || mismaClave) {
+          nivel = Math.max(nivel, 1);
+        }
+      });
+
+      if (nivel === 2) duplicadosAdvertencia.add(pend.id);
+      else if (nivel === 1) duplicadosSugerencia.add(pend.id);
+    });
+  });
+}
+
+// ── Focus Mode ─────────────────────────────────
+let focusModeActivo = false;
+function toggleFocusMode() {
+  focusModeActivo = !focusModeActivo;
+  document.querySelector('.app').classList.toggle('focus-mode', focusModeActivo);
+  const btn = document.getElementById('btn-focus');
+  if (btn) btn.style.background = focusModeActivo ? 'var(--sky-bg)' : '';
+}
+
+// ── Sugerencias ────────────────────────────────
+let sugerencias       = [];
+let sugerenciaIdx     = 0;
+let sugerenciasActivas = true;
+
+function generarSugerencias() {
+  sugerencias = [];
+  const pendBanco   = todos.filter(r => r.estatus === 'PENDIENTE' && (r.fuente === 'HSBC' || r.fuente === 'SANTANDER'));
+  const pendSistema = todos.filter(r => r.estatus === 'PENDIENTE' && r.fuente === 'SISTEMA');
+
+  pendBanco.forEach(banco => {
+    const claveBanco = normClave(banco.clave_alumno);
+    const folioBanco = banco.folio ? normClave(banco.folio) : null;
+
+    // 1. Coincidencia por folio exacto
+    if (folioBanco) {
+      const match = pendSistema.find(s => normClave(s.folio) === folioBanco);
+      if (match) {
+        sugerencias.push({ tipo: 'folio', banco, sistema: match,
+          texto: `Folio <strong>${folioBanco}</strong> — ${banco.fuente} ${MXN(banco.monto_banco)} ↔ Sistema ${MXN(match.monto_sistema)}` });
+        return;
+      }
+    }
+
+    // 2. Coincidencia por clave alumno
+    if (claveBanco) {
+      const matches = pendSistema.filter(s => normClave(s.clave_alumno) === claveBanco);
+      if (matches.length === 1) {
+        sugerencias.push({ tipo: 'clave', banco, sistema: matches[0],
+          texto: `Clave <strong>${claveBanco}</strong> — ${banco.fuente} ${MXN(banco.monto_banco)} ↔ Sistema ${MXN(matches[0].monto_sistema)}` });
+      } else if (matches.length > 1) {
+        // Posible desglose: mismo alumno, múltiples movimientos sistema
+        sugerencias.push({ tipo: 'desglose', banco, opciones: matches,
+          texto: `Clave <strong>${claveBanco}</strong> — ${banco.fuente} ${MXN(banco.monto_banco)} tiene <strong>${matches.length}</strong> movimientos en sistema (posible desglose)` });
+      }
+    }
+  });
+
+  sugerenciaIdx = 0;
+}
+
+function mostrarSugerenciaActual() {
+  const card = document.getElementById('sugerencia-card');
+  if (!card) return;
+  if (!sugerenciasActivas || sugerencias.length === 0) { card.style.display = 'none'; return; }
+
+  const s = sugerencias[sugerenciaIdx];
+  if (!s) { card.style.display = 'none'; return; }
+
+  const tipoLabel = { folio: 'Por folio', clave: 'Por clave', desglose: 'Posible desglose' }[s.tipo] || s.tipo;
+  const btnCoincidir = s.tipo !== 'desglose'
+    ? `<button class="btn btn-success sug-btn-coin" onclick="aplicarSugerencia(${sugerenciaIdx})" style="font-size:11px;padding:4px 10px">Coincidir</button>`
+    : `<button class="btn btn-amber" onclick="iniciarDesgloseDesdesugerencia(${sugerenciaIdx})" style="font-size:11px;padding:4px 10px">Ver desglose</button>`;
+
+  card.style.display = 'flex';
+  card.innerHTML = `
+    <span class="sug-tipo">${tipoLabel}</span>
+    <span class="sug-texto">${s.texto}</span>
+    <span style="font-size:11px;color:var(--ink-4)">${sugerenciaIdx + 1}/${sugerencias.length}</span>
+    <div class="sug-btns">
+      ${btnCoincidir}
+      <button class="btn btn-ghost" onclick="siguienteSugerencia()" style="font-size:11px;padding:4px 10px">Siguiente →</button>
+      <button class="btn btn-ghost" onclick="desactivarSugerencias()" style="font-size:11px;padding:4px 10px;color:var(--ink-4)" title="Desactivar sugerencias">✕</button>
+    </div>`;
+}
+
+function siguienteSugerencia() {
+  if (!sugerencias.length) return;
+  sugerenciaIdx = (sugerenciaIdx + 1) % sugerencias.length;
+  mostrarSugerenciaActual();
+}
+
+function desactivarSugerencias() {
+  sugerenciasActivas = false;
+  document.getElementById('sugerencia-card').style.display = 'none';
+  toast('Sugerencias desactivadas — usa "Activar sugerencias" para reanudar');
+}
+
+function activarSugerencias() {
+  sugerenciasActivas = true;
+  generarSugerencias();
+  mostrarSugerenciaActual();
+}
+
+async function aplicarSugerencia(idx) {
+  const s = sugerencias[idx];
+  if (!s || !s.banco || !s.sistema) return;
+  const base = { estatus: 'APROBADO', clasificacion: 'COINCIDE', revisado_at: new Date().toISOString(), revisado_por: 'Administrador' };
+  const { error: e1 } = await db.from('conciliaciones').update(base).eq('id', s.banco.id);
+  const { error: e2 } = await db.from('conciliaciones').update(base).eq('id', s.sistema.id);
+  if (e1 || e2) { toast('Error al aplicar coincidencia', 'err'); return; }
+  toast(`Coincidencia aplicada ✓`);
+  await cargarDatos();
+  generarSugerencias();
+  mostrarSugerenciaActual();
+  renderModoManual();
+}
+
+function iniciarDesgloseDesdesugerencia(idx) {
+  const s = sugerencias[idx];
+  if (!s || !s.banco) return;
+  if (desgloseActivo || coincidirActivo) { toast('Cancela la operación en curso primero.', 'err'); return; }
+  const reg = todos.find(r => r.id === s.banco.id);
+  if (!reg) return;
+  desgloseActivo = { bankId: s.banco.id, bankMonto: parseFloat(reg.monto_banco) || 0, seleccionados: new Set() };
+  actualizarBarraDesglose();
+  document.getElementById('desglose-bar').classList.add('open');
+  renderModoManual();
+}
+
+// ── Coincidir ──────────────────────────────────
+function toggleCoincidir(id) {
+  if (!coincidirActivo) return;
+  // Solo permite uno a la vez — deselecciona si ya estaba seleccionado
+  const prev = coincidirActivo.sistemaId;
+  coincidirActivo.sistemaId = prev === id ? null : id;
+
+  // Actualizar visual del card anterior
+  if (prev) {
+    const oldCard = document.getElementById(`card-${prev}`);
+    if (oldCard) { oldCard.classList.remove('seleccionado'); const chk = oldCard.querySelector('.card-check'); if (chk) chk.textContent = ''; }
+  }
+  // Actualizar visual del card nuevo
+  const newCard = document.getElementById(`card-${coincidirActivo.sistemaId}`);
+  if (newCard) { newCard.classList.add('seleccionado'); const chk = newCard.querySelector('.card-check'); if (chk) chk.textContent = '✓'; }
+
+  // Actualizar barra
+  const reg = coincidirActivo.sistemaId ? todos.find(r => r.id === coincidirActivo.sistemaId) : null;
+  const montoSis = reg ? (parseFloat(reg.monto_sistema) || 0) : 0;
+  const diff = parseFloat((coincidirActivo.bankMonto - montoSis).toFixed(2));
+  document.getElementById('cb-sistema').textContent = reg ? MXN(montoSis) : '—';
+  const diffEl = document.getElementById('cb-diff-label');
+  if (!reg) { diffEl.textContent = '—'; diffEl.className = 'bar-diff-exact'; }
+  else if (diff === 0) { diffEl.textContent = 'Montos exactos ✓'; diffEl.className = 'bar-diff-exact'; }
+  else { diffEl.textContent = `Diferencia: ${MXN(Math.abs(diff))}`; diffEl.className = 'bar-diff-warn'; }
+  document.getElementById('btn-confirmar-coincidir').disabled = !coincidirActivo.sistemaId;
+}
+
+function cancelarCoincidir() {
+  coincidirActivo = null;
+  document.getElementById('coincidir-bar').classList.remove('open');
+  renderModoManual();
+}
+
+async function confirmarCoincidir() {
+  if (!coincidirActivo || !coincidirActivo.sistemaId) return;
+  const base = { estatus: 'APROBADO', clasificacion: 'COINCIDE', revisado_at: new Date().toISOString(), revisado_por: 'Administrador' };
+  const { error: e1 } = await db.from('conciliaciones').update(base).eq('id', coincidirActivo.bankId);
+  if (e1) { toast('Error al guardar banco', 'err'); return; }
+  const { error: e2 } = await db.from('conciliaciones').update(base).eq('id', coincidirActivo.sistemaId);
+  if (e2) { toast('Error al guardar sistema', 'err'); return; }
+  toast('Movimientos coincididos y aprobados ✓');
+  coincidirActivo = null;
+  document.getElementById('coincidir-bar').classList.remove('open');
+  await cargarDatos();
+  renderModoManual();
+}
+
+// ── Desglose ───────────────────────────────────
+function toggleSeleccion(id) {
+  if (!desgloseActivo) return;
+  if (desgloseActivo.seleccionados.has(id)) {
+    desgloseActivo.seleccionados.delete(id);
+  } else {
+    desgloseActivo.seleccionados.add(id);
+  }
+  const card = document.getElementById(`card-${id}`);
+  if (card) {
+    card.classList.toggle('seleccionado', desgloseActivo.seleccionados.has(id));
+    const chk = card.querySelector('.card-check');
+    if (chk) chk.textContent = desgloseActivo.seleccionados.has(id) ? '✓' : '';
+  }
+  actualizarBarraDesglose();
+  actualizarBadgeSeleccion();
+}
+
+function sumaSeleccionada() {
+  if (!desgloseActivo) return 0;
+  return [...desgloseActivo.seleccionados].reduce((s, id) => {
+    const r = todos.find(x => x.id === id);
+    return s + (r ? (parseFloat(r.monto_sistema) || 0) : 0);
+  }, 0);
+}
+
+function actualizarBarraDesglose() {
+  if (!desgloseActivo) return;
+  const banco = desgloseActivo.bankMonto;
+  const sel   = sumaSeleccionada();
+  const diff  = parseFloat((banco - sel).toFixed(2));
+  const cnt   = desgloseActivo.seleccionados.size;
+
+  document.getElementById('bar-banco').textContent = MXN(banco);
+  document.getElementById('bar-sel').textContent   = MXN(sel);
+
+  const diffEl = document.getElementById('bar-diff-label');
+  const hint   = document.getElementById('bar-hint');
+
+  if (cnt === 0) {
+    diffEl.textContent = '—';
+    diffEl.className = 'bar-diff-exact';
+    hint.textContent = 'Selecciona movimientos del sistema';
+  } else if (diff === 0) {
+    diffEl.textContent = '✓ Exacto';
+    diffEl.className = 'bar-diff-exact';
+    hint.textContent = `${cnt} movimiento${cnt > 1 ? 's' : ''} seleccionado${cnt > 1 ? 's' : ''}`;
+  } else {
+    diffEl.textContent = `Dif. ${MXN(Math.abs(diff))} ${diff > 0 ? '(banco mayor)' : '(sistema mayor)'}`;
+    diffEl.className = 'bar-diff-monto';
+    hint.textContent = `${cnt} seleccionado${cnt > 1 ? 's' : ''}`;
+  }
+}
+
+function actualizarBadgeSeleccion() {
+  const badge = document.getElementById('sel-badge');
+  if (desgloseActivo && desgloseActivo.seleccionados.size > 0) {
+    badge.style.display = '';
+    badge.textContent   = desgloseActivo.seleccionados.size + ' sel.';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function cancelarDesglose() {
+  desgloseActivo = null;
+  document.getElementById('desglose-bar').classList.remove('open');
+  renderModoManual();
+}
+
+async function confirmarDesglose(forzar = false) {
+  if (!desgloseActivo || desgloseActivo.seleccionados.size === 0) {
+    toast('Selecciona al menos un movimiento del sistema', 'err');
+    return;
+  }
+
+  const banco = desgloseActivo.bankMonto;
+  const sel   = sumaSeleccionada();
+  const diff  = parseFloat((banco - sel).toFixed(2));
+
+  if (diff !== 0 && !forzar) {
+    document.getElementById('diff-monto-txt').textContent = MXN(Math.abs(diff));
+    document.getElementById('diff-dir-txt').textContent =
+      diff > 0 ? 'El banco registra más de lo que suma el sistema.' :
+                 'El sistema registra más de lo que marca el banco.';
+    document.getElementById('overlay-diferencia').classList.add('open');
+    return;
+  }
+
+  const grupoId = crypto.randomUUID();
+  const clasif  = diff === 0 ? 'DESGLOSE_MANUAL' : 'DESGLOSE_CON_DIFERENCIA';
+  const notaDiff = diff !== 0
+    ? `Desglose manual con diferencia de ${MXN(Math.abs(diff))} ${diff > 0 ? '(banco mayor)' : '(sistema mayor)'}.`
+    : null;
+
+  const base = {
+    estatus: 'APROBADO',
+    clasificacion: clasif,
+    grupo_conciliacion: grupoId,
+    diferencia_desglose: diff !== 0 ? Math.abs(diff) : null,
+    revisado_at: new Date().toISOString(),
+    revisado_por: 'Administrador',
+  };
+  if (notaDiff) base.notas = notaDiff;
+
+  const { error: e1 } = await db.from('conciliaciones').update(base).eq('id', desgloseActivo.bankId);
+  if (e1) { toast('Error al guardar banco', 'err'); return; }
+
+  for (const sid of desgloseActivo.seleccionados) {
+    const { error } = await db.from('conciliaciones').update(base).eq('id', sid);
+    if (error) { toast('Error al guardar movimiento sistema', 'err'); return; }
+  }
+
+  const cnt = desgloseActivo.seleccionados.size;
+  toast(`Desglose guardado — ${cnt + 1} registros vinculados`);
+  desgloseActivo = null;
+  document.getElementById('desglose-bar').classList.remove('open');
+  document.getElementById('overlay-diferencia').classList.remove('open');
+  await cargarDatos();
+  renderModoManual();
+}
+
+// ── Sidebar móvil ──────────────────────────────
+function toggleSidebar() {
   document.querySelector('.sidebar').classList.toggle('open');
   document.getElementById('sidebarBackdrop').classList.toggle('show');
 }
-function closeSidebar(){
+function closeSidebar() {
   document.querySelector('.sidebar').classList.remove('open');
   document.getElementById('sidebarBackdrop').classList.remove('show');
 }
-document.querySelectorAll('.nav-item').forEach(el=>{
-  el.addEventListener('click',()=>{ if(window.innerWidth<=768) closeSidebar(); });
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.addEventListener('click', () => { if (window.innerWidth <= 768) closeSidebar(); });
 });
 
-// ── Init ──────────────────────────────────────
+// ── Init ───────────────────────────────────────
 (async () => {
   const ok = await initConexion();
   if (ok) await cargarDatos();
@@ -683,6 +2283,5 @@ document.querySelectorAll('.nav-item').forEach(el=>{
     '<tr><td colspan="10" class="state-msg">Sin conexión a Supabase.</td></tr>';
 })();
 </script>
-<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
 </body>
 </html>

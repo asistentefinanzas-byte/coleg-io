@@ -281,12 +281,19 @@ tr:hover td { background: var(--surface-2); }
       </div>
       <span class="nav-label">Reportes</span>
     </a>
-    <a class="nav-item" href="../../index.html">
+    <a class="nav-item" href="../cobranza/index.html">
       <div class="nav-dot"></div>
       <div class="nav-ico" style="background:var(--sand-bg);border:1px solid var(--sand)">
         <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#8a6a20" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
       </div>
       <span class="nav-label">Cobranza</span>
+    </a>
+    <a class="nav-item" href="../rh/index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:#f0faf4;border:1px solid #a8d5b5">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#3a7a55" stroke-width="1.8"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="13" y2="15"/></svg>
+      </div>
+      <span class="nav-label">RH — Contratos</span>
     </a>
   </div>
   <div class="sidebar-footer">
@@ -572,13 +579,15 @@ function renderTodo(rows, desde, hasta) {
   renderConclusiones(rows);
 }
 
+const monto = r => parseFloat(r.monto_banco) || parseFloat(r.monto_sistema) || 0;
+
 /* ── ① KPIs ──────────────────────────────────────────────── */
 function renderKPIs(rows) {
   const aprobados = rows.filter(r => r.estatus === 'APROBADO');
   const pendientes = rows.filter(r => r.estatus === 'PENDIENTE' || r.estatus === 'EN_REVISION');
-  const transito  = rows.filter(r => r.clasificacion === 'TRANSITO_SALIENTE' || r.clasificacion === 'SIN_COINCIDENCIA');
+  const transito  = rows.filter(r => r.clasificacion === 'SIN_COINCIDENCIA');
 
-  const sum = arr => arr.reduce((s,r) => s + (parseFloat(r.monto_banco)||0), 0);
+  const sum = arr => arr.reduce((s,r) => s + monto(r), 0);
 
   const tApro = sum(aprobados);
   const tPend = sum(pendientes);
@@ -601,7 +610,7 @@ function renderChartPago(rows) {
   const map = {};
   rows.filter(r=>r.estatus==='APROBADO').forEach(r => {
     const fp = r.forma_pago || 'Sin especificar';
-    map[fp] = (map[fp]||0) + (parseFloat(r.monto_banco)||0);
+    map[fp] = (map[fp]||0) + (monto(r));
   });
   const labels = Object.keys(map);
   const vals   = Object.values(map);
@@ -626,8 +635,8 @@ function renderChartCuenta(rows) {
   destroyChart('cuenta');
   const map = { SANTANDER: 0, HSBC: 0, SISTEMA: 0 };
   rows.filter(r=>r.estatus==='APROBADO').forEach(r => {
-    if (map[r.fuente] !== undefined) map[r.fuente] += parseFloat(r.monto_banco)||0;
-    else map[r.fuente||'Otro'] = (map[r.fuente||'Otro']||0) + (parseFloat(r.monto_banco)||0);
+    if (map[r.fuente] !== undefined) map[r.fuente] += monto(r);
+    else map[r.fuente||'Otro'] = (map[r.fuente||'Otro']||0) + (monto(r));
   });
   const labels = Object.keys(map).filter(k=>map[k]>0);
   const vals   = labels.map(k=>map[k]);
@@ -656,7 +665,7 @@ function renderChartDiario(rows) {
 
   const datasets = cuentas.map((c,i) => ({
     label: c,
-    data: dias.map(d => apros.filter(r=>r.fecha?.slice(0,10)===d && r.fuente===c).reduce((s,r)=>s+(parseFloat(r.monto_banco)||0),0)),
+    data: dias.map(d => apros.filter(r=>r.fecha?.slice(0,10)===d && r.fuente===c).reduce((s,r)=>s+(monto(r)),0)),
     borderColor: colors[c]||PALETTE[i],
     backgroundColor: (colors[c]||PALETTE[i])+'30',
     fill: true, tension: .4, borderWidth: 2, pointRadius: 3
@@ -701,7 +710,7 @@ function renderCartera(rows) {
   grades.forEach(grado => {
     const reg = colegiaturas.filter(r=>(r.grado||'Sin grado')===grado);
     const t = { anio_pasado:0, anticipada:0, mes_actual:0, vencida:0 };
-    reg.forEach(r => { const c = clasificarPeriodo(r.periodo); if (t[c]!==undefined) t[c]+=(parseFloat(r.monto_banco)||0); });
+    reg.forEach(r => { const c = clasificarPeriodo(r.periodo); if (t[c]!==undefined) t[c]+=(monto(r)); });
     const total = Object.values(t).reduce((a,b)=>a+b,0);
     totGlobal += total;
     tipos.forEach(tp => { totalesTipo[tp] += t[tp]; });
@@ -728,7 +737,7 @@ function renderChartNivel(rows) {
   const map = {};
   rows.filter(r=>r.estatus==='APROBADO').forEach(r => {
     const nv = r.nivel || 'Sin nivel';
-    map[nv] = (map[nv]||0) + (parseFloat(r.monto_banco)||0);
+    map[nv] = (map[nv]||0) + (monto(r));
   });
   const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]);
   if (!sorted.length) return;
@@ -771,7 +780,7 @@ function renderTransito(rows) {
 /* ── ⑧ Resumen ───────────────────────────────────────────── */
 function renderResumen(rows, desde, hasta) {
   const apros = rows.filter(r=>r.estatus==='APROBADO');
-  const total = apros.reduce((s,r)=>s+(parseFloat(r.monto_banco)||0),0);
+  const total = apros.reduce((s,r)=>s+(monto(r)),0);
   const tasa  = rows.length ? ((apros.length/rows.length)*100).toFixed(1) : 0;
 
   // Promedio diario
@@ -779,11 +788,11 @@ function renderResumen(rows, desde, hasta) {
   const prom = dias.length ? total/dias.length : 0;
 
   // Cuenta líder
-  const mapC = {}; apros.forEach(r=>{mapC[r.fuente||'N/A']=(mapC[r.fuente||'N/A']||0)+(parseFloat(r.monto_banco)||0);});
+  const mapC = {}; apros.forEach(r=>{mapC[r.fuente||'N/A']=(mapC[r.fuente||'N/A']||0)+(monto(r));});
   const cuentaLider = Object.entries(mapC).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
 
   // Día máximo
-  const mapD = {}; apros.forEach(r=>{if(r.fecha){const d=r.fecha.slice(0,10);mapD[d]=(mapD[d]||0)+(parseFloat(r.monto_banco)||0);}});
+  const mapD = {}; apros.forEach(r=>{if(r.fecha){const d=r.fecha.slice(0,10);mapD[d]=(mapD[d]||0)+(monto(r));}});
   const diaPeak = Object.entries(mapD).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
 
   // Periodo más activo
@@ -803,7 +812,7 @@ function renderConclusiones(rows) {
   const apros   = rows.filter(r=>r.estatus==='APROBADO');
   const pends   = rows.filter(r=>r.estatus==='PENDIENTE');
   const tran    = rows.filter(r=>r.clasificacion==='TRANSITO_SALIENTE'||r.clasificacion==='SIN_COINCIDENCIA');
-  const total   = apros.reduce((s,r)=>s+(parseFloat(r.monto_banco)||0),0);
+  const total   = apros.reduce((s,r)=>s+(monto(r)),0);
   const tasa    = rows.length ? ((apros.length/rows.length)*100).toFixed(0) : 0;
   const afil    = rows.filter(r=>r.clasificacion==='AFIL');
 

@@ -191,6 +191,74 @@ textarea.notes-ta:focus{border-color:var(--border-2);}
 .conc-alert{background:var(--sage-bg);border:1px solid var(--sage);border-radius:8px;padding:10px 14px;margin:14px 0;font-size:12px;color:#2d5e42;display:flex;align-items:flex-start;gap:8px;}
 .conc-alert svg{flex-shrink:0;margin-top:1px;}
 
+/* ── VIEW: AGENDA (Gantt + Calendario) ──────────────────── */
+#view-agenda{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+.agenda-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 28px;background:var(--surface);flex-shrink:0;}
+.atab{font:inherit;font-size:12.5px;font-weight:500;padding:12px 16px;border:none;border-bottom:2px solid transparent;background:none;color:var(--ink-3);cursor:pointer;transition:color .15s,border-color .15s;margin-bottom:-1px;}
+.atab:hover{color:var(--ink-2);}
+.atab.active{color:var(--ink-1);border-bottom-color:var(--ink-1);}
+.agenda-body{flex:1;overflow-y:auto;padding:24px 28px;}
+.agenda-body::-webkit-scrollbar{width:3px;} .agenda-body::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:2px;}
+
+/* Gantt */
+.gantt-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.gantt-header h2{font-family:'Playfair Display',serif;font-size:18px;font-weight:400;color:var(--ink-1);}
+.gantt-legend{display:flex;gap:14px;font-size:11px;color:var(--ink-3);}
+.gantt-legend span{display:flex;align-items:center;gap:5px;}
+.legend-dot{width:8px;height:8px;border-radius:2px;display:inline-block;}
+.gantt-empty{text-align:center;padding:60px 20px;color:var(--ink-4);font-size:13px;}
+
+.gantt-row{display:flex;align-items:center;gap:0;padding:0;margin-bottom:6px;border-radius:9px;overflow:hidden;background:var(--surface);border:1px solid var(--border);transition:box-shadow .15s;cursor:pointer;}
+.gantt-row:hover{box-shadow:0 2px 8px rgba(0,0,0,.07);}
+.gantt-info{width:220px;flex-shrink:0;padding:10px 14px;border-right:1px solid var(--border);}
+.gantt-name{font-size:12.5px;font-weight:600;color:var(--ink-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.gantt-sub{font-size:11px;color:var(--ink-3);margin-top:1px;}
+.gantt-track{flex:1;padding:0 14px;position:relative;height:54px;display:flex;align-items:center;}
+.gantt-bar-bg{width:100%;height:14px;background:var(--surface-2);border-radius:99px;overflow:hidden;position:relative;}
+.gantt-bar-fill{height:100%;border-radius:99px;transition:width .4s;}
+.gantt-countdown{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;}
+.gantt-deadline{font-size:11px;color:var(--ink-4);margin-top:3px;}
+
+/* countdown colors */
+.cnt-ok    {color:#2F7D4F;} .bar-ok    {background:#7ec8a0;}
+.cnt-warn  {color:#B6791C;} .bar-warn  {background:#f5c26b;}
+.cnt-alert {color:#c0542a;} .bar-alert {background:#f5a06b;}
+.cnt-due   {color:#B23B3B;} .bar-due   {background:#e88080;}
+.cnt-late  {color:#7a2222;} .bar-late  {background:#c0c0c0;}
+
+/* vence-hoy badge */
+.badge-due{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:#fae7e5;color:#B23B3B;border:1px solid #e8c4c0;margin-left:7px;animation:pulse-badge 1.5s ease-in-out infinite;}
+.badge-late{background:#f0e8e8;color:#7a2222;border-color:#d4b8b8;animation:none;}
+@keyframes pulse-badge{0%,100%{opacity:1;}50%{opacity:.6;}}
+
+/* Calendario */
+.cal-nav{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.cal-nav h2{font-family:'Playfair Display',serif;font-size:18px;font-weight:400;color:var(--ink-1);flex:1;text-align:center;}
+.cal-nav-btn{font:inherit;background:var(--surface);border:1px solid var(--border);border-radius:8px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink-2);transition:background .15s;}
+.cal-nav-btn:hover{background:var(--surface-2);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+.cal-dow{text-align:center;font-size:10.5px;font-weight:600;color:var(--ink-4);text-transform:uppercase;letter-spacing:.5px;padding:4px 0 8px;}
+.cal-day{min-height:76px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:7px 8px;cursor:default;transition:box-shadow .15s;}
+.cal-day.has-events{cursor:pointer;}
+.cal-day.has-events:hover{box-shadow:0 2px 8px rgba(0,0,0,.08);}
+.cal-day.today{border-color:var(--ink-1);background:var(--surface-2);}
+.cal-day.other-month{background:transparent;border-color:transparent;}
+.cal-day-num{font-size:12px;font-weight:600;color:var(--ink-3);margin-bottom:4px;}
+.cal-day.today .cal-day-num{color:var(--ink-1);}
+.cal-day.other-month .cal-day-num{color:var(--ink-4);}
+.cal-event{font-size:10.5px;font-weight:500;padding:2px 5px;border-radius:4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cal-event.ev-ok   {background:var(--sage-bg);color:#2f7d4f;}
+.cal-event.ev-warn {background:#fdf3e0;color:#b6791c;}
+.cal-event.ev-alert{background:#fde8dc;color:#c0542a;}
+.cal-event.ev-due  {background:#fae7e5;color:#B23B3B;}
+.cal-event.ev-late {background:#f0e8e8;color:#7a2222;}
+.cal-day-popup{position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:14px 16px;min-width:220px;max-width:300px;z-index:200;font-size:12.5px;}
+.cal-day-popup h4{font-family:'Playfair Display',serif;font-weight:400;font-size:14px;margin-bottom:8px;color:var(--ink-1);}
+.cal-popup-item{padding:6px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;}
+.cal-popup-item:last-child{border-bottom:none;}
+.cal-popup-name{font-weight:500;color:var(--ink-1);}
+.cal-popup-days{font-family:'IBM Plex Mono',monospace;font-size:11px;}
+
 .menu-btn{display:none;width:34px;height:34px;background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;align-items:center;justify-content:center;color:var(--ink-2);flex-shrink:0;}
 .sidebar-backdrop{display:none;position:fixed;inset:0;z-index:40;background:rgba(26,24,20,.45);}
 .sidebar-backdrop.show{display:block;}
@@ -276,6 +344,27 @@ textarea.notes-ta:focus{border-color:var(--border-2);}
       </div>
       <span class="nav-label">Reportes</span>
     </a>
+    <a class="nav-item active" href="index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--sand-bg);border-color:var(--sand)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#8a6a20" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      </div>
+      <span class="nav-label">Cobranza</span>
+    </a>
+    <a class="nav-item" href="../inventario/index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:var(--sage-bg);border-color:var(--sage)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#3a7a55" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      </div>
+      <span class="nav-label">Inventario</span>
+    </a>
+    <a class="nav-item" href="../rh/index.html">
+      <div class="nav-dot"></div>
+      <div class="nav-ico" style="background:#f0faf4;border:1px solid #a8d5b5">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#3a7a55" stroke-width="1.8"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="13" y2="15"/></svg>
+      </div>
+      <span class="nav-label">RH — Contratos</span>
+    </a>
   </div>
 
   <div class="sidebar-sep"></div>
@@ -292,6 +381,10 @@ textarea.notes-ta:focus{border-color:var(--border-2);}
     <button class="vtab" data-view="tabla" onclick="switchView('tabla',this)">
       <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       Tabla completa
+    </button>
+    <button class="vtab" data-view="agenda" onclick="switchView('agenda',this)">
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Agenda / Compromisos
     </button>
   </div>
 
@@ -310,6 +403,19 @@ textarea.notes-ta:focus{border-color:var(--border-2);}
 </div>
 <div id="view-dashboard" style="display:none;flex:1;overflow-y:auto;padding:24px 28px;"></div>
 <div id="view-tabla" style="display:none;flex:1;overflow:hidden;display:none;flex-direction:column;padding:20px 28px 0;"></div>
+<div id="view-agenda" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
+  <div class="agenda-tabs">
+    <button class="atab active" id="atab-gantt" onclick="switchAgendaTab('gantt')">
+      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right:5px;vertical-align:middle"><rect x="3" y="4" width="10" height="3" rx="1"/><rect x="3" y="10" width="16" height="3" rx="1"/><rect x="3" y="16" width="7" height="3" rx="1"/></svg>
+      Gantt — Countdown
+    </button>
+    <button class="atab" id="atab-cal" onclick="switchAgendaTab('cal')">
+      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right:5px;vertical-align:middle"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Calendario mensual
+    </button>
+  </div>
+  <div class="agenda-body" id="agenda-body"></div>
+</div>
 
 </div>
 
@@ -420,9 +526,22 @@ function switchView(view, btn) {
   activeView = view;
   document.querySelectorAll('.vtab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  document.querySelectorAll('#view-kanban,#view-dashboard,#view-tabla').forEach(v => v.style.display = 'none');
-  document.getElementById('view-'+view).style.display = view === 'tabla' ? 'flex' : (view === 'kanban' ? 'flex' : 'block');
-  document.getElementById('view-'+view).style.flexDirection = 'column';
+  document.querySelectorAll('#view-kanban,#view-dashboard,#view-tabla,#view-agenda').forEach(v => v.style.display = 'none');
+  const el = document.getElementById('view-'+view);
+  el.style.display = 'flex';
+  el.style.flexDirection = 'column';
+  render();
+}
+
+/* ── Sub-tab Agenda ──────────────────────────────────────── */
+let agendaTab = 'gantt';
+let calYear, calMonth;
+(() => { const now = new Date(); calYear = now.getFullYear(); calMonth = now.getMonth(); })();
+
+function switchAgendaTab(tab) {
+  agendaTab = tab;
+  document.getElementById('atab-gantt').classList.toggle('active', tab==='gantt');
+  document.getElementById('atab-cal').classList.toggle('active', tab==='cal');
   render();
 }
 
@@ -443,6 +562,193 @@ function render() {
   if (activeView === 'kanban')    renderKanban();
   if (activeView === 'dashboard') renderDashboard();
   if (activeView === 'tabla')     renderTabla();
+  if (activeView === 'agenda')    renderAgenda();
+}
+
+/* ══════════════════════════════════════════════════════════
+   AGENDA
+   ══════════════════════════════════════════════════════════ */
+function diasHasta(fechaStr) {
+  if (!fechaStr) return null;
+  const hoyISO = TODAY();
+  const msHoy  = new Date(hoyISO + 'T00:00:00').getTime();
+  const msDest = new Date(fechaStr + 'T00:00:00').getTime();
+  return Math.round((msDest - msHoy) / 86400000);
+}
+
+function cntClass(dias) {
+  if (dias === null) return '';
+  if (dias > 7)  return 'ok';
+  if (dias > 3)  return 'warn';
+  if (dias > 0)  return 'alert';
+  if (dias === 0) return 'due';
+  return 'late';
+}
+
+function cntLabel(dias) {
+  if (dias === null) return '';
+  if (dias > 0)  return `${dias}d restantes`;
+  if (dias === 0) return 'VENCE HOY';
+  return `${Math.abs(dias)}d VENCIDO`;
+}
+
+function renderAgenda() {
+  if (agendaTab === 'gantt') renderGantt();
+  else renderCalendario();
+}
+
+/* ── GANTT ───────────────────────────────────────────────── */
+function renderGantt() {
+  const root = document.getElementById('agenda-body');
+  // Alumnos con compromiso y fecha establecida
+  const con = alumnos
+    .filter(a => a.compromiso && a.fecha_para_pago)
+    .sort((a,b) => {
+      const da = diasHasta(a.fecha_para_pago), db2 = diasHasta(b.fecha_para_pago);
+      return (da??999) - (db2??999);
+    });
+
+  // Max días para escalar barras (al menos 30)
+  const maxDias = Math.max(30, ...con.map(a => Math.max(0, diasHasta(a.fecha_para_pago)||0)));
+
+  let html = `<div class="gantt-header">
+    <h2>Compromisos de pago</h2>
+    <div class="gantt-legend">
+      <span><i class="legend-dot" style="background:#7ec8a0"></i> +7 días</span>
+      <span><i class="legend-dot" style="background:#f5c26b"></i> 4–7 días</span>
+      <span><i class="legend-dot" style="background:#f5a06b"></i> 1–3 días</span>
+      <span><i class="legend-dot" style="background:#e88080"></i> Vence hoy</span>
+      <span><i class="legend-dot" style="background:#c0c0c0"></i> Vencido</span>
+    </div>
+  </div>`;
+
+  if (!con.length) {
+    html += `<div class="gantt-empty">
+      <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="var(--ink-4)" stroke-width="1.2" style="margin-bottom:12px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <div style="font-size:14px;font-weight:500;color:var(--ink-3)">Sin compromisos de pago registrados</div>
+      <div style="margin-top:6px">Abre el panel de un alumno, marca "Hay compromiso de pago" y establece la fecha.</div>
+    </div>`;
+    root.innerHTML = html;
+    return;
+  }
+
+  con.forEach(a => {
+    const dias   = diasHasta(a.fecha_para_pago);
+    const cls    = cntClass(dias);
+    const lbl    = cntLabel(dias);
+    const pct    = dias > 0 ? Math.min(100, Math.round((dias / maxDias) * 100)) : 0;
+    const badgeHTML = dias === 0
+      ? `<span class="badge-due">⚡ VENCE HOY</span>`
+      : dias < 0
+      ? `<span class="badge-due badge-late">⚠ ${Math.abs(dias)}d VENCIDO</span>`
+      : '';
+
+    html += `<div class="gantt-row" onclick="openDetail('${a.id}')">
+      <div class="gantt-info">
+        <div class="gantt-name">${a.nombre}${badgeHTML}</div>
+        <div class="gantt-sub">${a.clave_alumno} · ${a.nivel} ${a.grado_grupo||''}</div>
+        <div class="gantt-sub" style="margin-top:2px;font-family:'IBM Plex Mono',monospace">${MXN(a.total_adeudado)}</div>
+      </div>
+      <div class="gantt-track">
+        <div style="flex:1">
+          <div class="gantt-bar-bg">
+            <div class="gantt-bar-fill bar-${cls}" style="width:${pct}%"></div>
+          </div>
+          <div class="gantt-deadline" style="margin-top:4px">Vence: <strong>${FMTD(a.fecha_para_pago)}</strong></div>
+        </div>
+        <div class="gantt-countdown cnt-${cls}" style="margin-left:14px;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700">${lbl}</div>
+      </div>
+    </div>`;
+  });
+
+  root.innerHTML = html;
+}
+
+/* ── CALENDARIO ──────────────────────────────────────────── */
+function renderCalendario() {
+  const root = document.getElementById('agenda-body');
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const DOW   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+  // Construir mapa fecha → alumnos
+  const mapa = {};
+  alumnos.filter(a => a.compromiso && a.fecha_para_pago).forEach(a => {
+    if (!mapa[a.fecha_para_pago]) mapa[a.fecha_para_pago] = [];
+    mapa[a.fecha_para_pago].push(a);
+  });
+
+  const hoyISO = TODAY();
+  const firstDay = new Date(calYear, calMonth, 1);
+  const lastDay  = new Date(calYear, calMonth + 1, 0);
+  const startDow = firstDay.getDay();
+
+  let html = `
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="calNav(-1)">‹</button>
+      <h2>${MESES[calMonth]} ${calYear}</h2>
+      <button class="cal-nav-btn" onclick="calNav(1)">›</button>
+    </div>
+    <div class="cal-grid">
+      ${DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('')}`;
+
+  // Celdas vacías inicio
+  for (let i = 0; i < startDow; i++) html += `<div class="cal-day other-month"></div>`;
+
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    const iso = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const eventos = mapa[iso] || [];
+    const isHoy   = iso === hoyISO;
+    const hasCls  = eventos.length ? ' has-events' : '';
+    const hoyCls  = isHoy ? ' today' : '';
+    const dataAttr = eventos.length ? `data-fecha="${iso}"` : '';
+
+    html += `<div class="cal-day${hasCls}${hoyCls}" ${dataAttr} onclick="${eventos.length?`openCalPopup('${iso}',event)`:''}" >
+      <div class="cal-day-num">${d}${isHoy?'<span style="font-size:9px;color:var(--ink-4);margin-left:4px">hoy</span>':''}</div>
+      ${eventos.slice(0,3).map(a => {
+        const dias = diasHasta(iso);
+        const ecls = `ev-${cntClass(dias)}`;
+        return `<div class="cal-event ${ecls}">${a.nombre.split(' ')[0]} ${a.nombre.split(' ').slice(-1)[0]}</div>`;
+      }).join('')}
+      ${eventos.length > 3 ? `<div style="font-size:10px;color:var(--ink-4)">+${eventos.length-3} más</div>` : ''}
+    </div>`;
+  }
+
+  // Celdas vacías fin
+  const remaining = 7 - ((startDow + lastDay.getDate()) % 7);
+  if (remaining < 7) for (let i = 0; i < remaining; i++) html += `<div class="cal-day other-month"></div>`;
+
+  html += '</div>';
+  root.innerHTML = html;
+}
+
+function calNav(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0)  { calMonth = 11; calYear--; }
+  renderCalendario();
+}
+
+function openCalPopup(iso, e) {
+  document.querySelector('.cal-day-popup')?.remove();
+  const mapa = {};
+  alumnos.filter(a => a.compromiso && a.fecha_para_pago).forEach(a => {
+    if (!mapa[a.fecha_para_pago]) mapa[a.fecha_para_pago] = [];
+    mapa[a.fecha_para_pago].push(a);
+  });
+  const lista = mapa[iso] || [];
+  const dias = diasHasta(iso);
+  const popup = document.createElement('div');
+  popup.className = 'cal-day-popup';
+  popup.innerHTML = `<h4>Compromisos ${FMTD(iso)}</h4>
+    ${lista.map(a => `<div class="cal-popup-item" onclick="document.querySelector('.cal-day-popup')?.remove();openDetail('${a.id}')">
+      <span class="cal-popup-name">${a.nombre}</span>
+      <span class="cal-popup-days cnt-${cntClass(dias)}">${cntLabel(dias)}</span>
+    </div>`).join('')}`;
+  document.body.appendChild(popup);
+  const rect = e.target.closest('.cal-day').getBoundingClientRect();
+  popup.style.top  = Math.min(rect.bottom + 6, window.innerHeight - 200) + 'px';
+  popup.style.left = Math.min(rect.left, window.innerWidth - 320) + 'px';
+  setTimeout(() => document.addEventListener('click', () => popup.remove(), { once: true }), 100);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -645,10 +951,54 @@ function openDetail(id) {
       <div class="field"><label>Suspensión</label><div class="fv">${a.suspension ? 'Sí, desde '+FMTD(a.fecha_suspension) : 'No'}</div></div>
     </div>
 
+    <div class="section-lbl">Compromiso de pago</div>
+    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-bottom:2px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-2);cursor:pointer">
+          <input type="checkbox" id="chk-compromiso" ${a.compromiso?'checked':''} style="width:15px;height:15px;accent-color:var(--ink-1);cursor:pointer">
+          Hay compromiso de pago
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="flex:1">
+          <div style="font-size:10.5px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Fecha comprometida</div>
+          <input id="inp-fecha-compromiso" type="date" value="${a.fecha_para_pago||''}"
+            style="width:100%;height:34px;padding:0 10px;border-radius:7px;border:1px solid var(--border);font:inherit;font-size:12.5px;background:var(--surface);color:var(--ink-1);outline:none">
+        </div>
+        ${a.fecha_para_pago ? (() => {
+          const dias = Math.ceil((new Date(a.fecha_para_pago) - new Date(TODAY())) / 86400000);
+          const cls = dias > 7 ? 'cnt-ok' : dias > 3 ? 'cnt-warn' : dias > 0 ? 'cnt-alert' : dias === 0 ? 'cnt-due' : 'cnt-late';
+          const txt = dias > 0 ? `${dias}d restantes` : dias === 0 ? 'VENCE HOY' : `${Math.abs(dias)}d vencido`;
+          return `<div style="text-align:center;padding:6px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--border)"><div class="${cls}" style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700">${txt}</div><div style="font-size:10px;color:var(--ink-4);margin-top:2px">hoy ${FMTD(TODAY())}</div></div>`;
+        })() : ''}
+      </div>
+    </div>
+
     <div class="section-lbl">Estatus</div>
     <select class="estatus-sel" id="sel-estatus">
       ${ESTADOS.map(e=>`<option value="${e}" ${e===a.estatus?'selected':''}>${ESTADO_LABEL[e]}</option>`).join('')}
     </select>
+
+    <div class="section-lbl">Pago manual</div>
+    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-bottom:2px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div>
+          <div style="font-size:10.5px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Monto pagado</div>
+          <input id="inp-monto" type="number" step="0.01" min="0" placeholder="0.00"
+            value="${a.monto_pagado||''}"
+            style="width:100%;height:34px;padding:0 10px;border-radius:7px;border:1px solid var(--border);font:inherit;font-size:13px;font-family:'IBM Plex Mono',monospace;background:var(--surface);color:var(--ink-1);outline:none">
+        </div>
+        <div>
+          <div style="font-size:10.5px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Fecha del pago</div>
+          <input id="inp-fecha-pago" type="date"
+            value="${a.fecha_pago_manual||TODAY()}"
+            style="width:100%;height:34px;padding:0 10px;border-radius:7px;border:1px solid var(--border);font:inherit;font-size:12.5px;background:var(--surface);color:var(--ink-1);outline:none">
+        </div>
+      </div>
+      <button class="btn btn-green" style="width:100%;justify-content:center" onclick="confirmarPagoManual('${a.id}')">
+        Confirmar pago y marcar como Pagado
+      </button>
+    </div>
 
     <div class="section-lbl">Comentarios</div>
     <textarea class="notes-ta" id="inp-notas">${a.comentarios||''}</textarea>
@@ -690,12 +1040,19 @@ async function cambiarEstatus(a, nuevoEstatus) {
 async function guardarCambios(id) {
   const a = alumnos.find(x => String(x.id) === id);
   if (!a) return;
-  const estatus   = document.getElementById('sel-estatus').value;
-  const comentarios = document.getElementById('inp-notas').value;
+  const estatus       = document.getElementById('sel-estatus').value;
+  const comentarios   = document.getElementById('inp-notas').value;
+  const compromiso    = document.getElementById('chk-compromiso').checked;
+  const fecha_para_pago = document.getElementById('inp-fecha-compromiso').value || null;
   a.estatus = estatus;
   a.comentarios = comentarios;
+  a.compromiso = compromiso;
+  a.fecha_para_pago = fecha_para_pago;
   if (supabaseOk && !id.startsWith('d')) {
-    await db.from('cobranza').update({ estatus, comentarios, updated_at: new Date().toISOString() }).eq('id', id);
+    await db.from('cobranza').update({
+      estatus, comentarios, compromiso, fecha_para_pago,
+      updated_at: new Date().toISOString()
+    }).eq('id', id);
   }
   document.getElementById('overlay').classList.remove('open');
   render();
@@ -723,6 +1080,32 @@ async function marcarPagado(id) {
   if (!a) return;
   await cambiarEstatus(a, 'PAGADO');
   document.getElementById('overlay').classList.remove('open');
+}
+
+async function confirmarPagoManual(id) {
+  const a = alumnos.find(x => String(x.id) === id);
+  if (!a) return;
+  const monto = parseFloat(document.getElementById('inp-monto').value) || 0;
+  const fechaPago = document.getElementById('inp-fecha-pago').value || TODAY();
+  if (monto <= 0) { alert('Ingresa un monto válido para confirmar el pago.'); return; }
+  if (!confirm(`¿Confirmas el pago de ${MXN(monto)} para ${a.nombre} con fecha ${fechaPago}?\n\nSe marcará como PAGADO.`)) return;
+
+  a.monto_pagado = monto;
+  a.fecha_pago_manual = fechaPago;
+  a.pago_confirmado = true;
+  a.estatus = 'PAGADO';
+
+  if (supabaseOk && !String(id).startsWith('d')) {
+    await db.from('cobranza').update({
+      estatus: 'PAGADO',
+      monto_pagado: monto,
+      pago_confirmado: true,
+      ultima_fecha_contacto: fechaPago,
+      updated_at: new Date().toISOString()
+    }).eq('id', id);
+  }
+  document.getElementById('overlay').classList.remove('open');
+  render();
 }
 
 /* ── Boot ────────────────────────────────────────────────── */
